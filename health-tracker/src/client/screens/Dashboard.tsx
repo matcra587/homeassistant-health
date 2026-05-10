@@ -29,6 +29,7 @@ import {
 } from "../lib/calc";
 import { fmtDate, fmtDateLong } from "../lib/format";
 import { fmtDelta, fmtWeight } from "../lib/units";
+import { getToday } from "../store";
 import { EmptyDashboard } from "./EmptyDashboard";
 import { FirstOfMonthCard } from "./FirstOfMonthCard";
 
@@ -73,7 +74,7 @@ export function Dashboard({ me, entries, units, onLogToday }: DashboardProps) {
   const bf = estBodyFat(latest.weightKg, me.heightCm, me.age, me.sex);
   const ideal = calcIdealWeight(me.heightCm, me.sex);
 
-  const today = window.__fixtures?.today ?? new Date();
+  const today = getToday();
   const loggedToday =
     new Date(latest.date).toDateString() === today.toDateString();
   const dayDelta = previous ? latest.weightKg - previous.weightKg : 0;

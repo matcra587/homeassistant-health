@@ -11,6 +11,7 @@ import { useMemo, useState } from "react";
 import type { Entry, Member, Units } from "../../lib/types";
 import { fmtDate } from "../lib/format";
 import { kgToLb } from "../lib/units";
+import { getToday } from "../store";
 
 export const RANGE_DAYS = {
   "1W": 7,
@@ -26,7 +27,7 @@ export type RangeKey = keyof typeof RANGE_DAYS;
 export function filterByRange(entries: Entry[], range: RangeKey): Entry[] {
   const days = RANGE_DAYS[range];
   if (!Number.isFinite(days)) return entries;
-  const today = window.__fixtures?.today ?? new Date();
+  const today = getToday();
   const cutoff = +today - days * 86_400_000;
   return entries.filter((e) => +new Date(e.date) >= cutoff);
 }

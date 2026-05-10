@@ -1,3 +1,4 @@
+import { getToday } from "../store";
 export type DateFormatOptions = {
   relative?: boolean;
   year?: boolean;
@@ -8,7 +9,7 @@ export function fmtDate(
   opts: DateFormatOptions = {},
 ): string {
   const date = new Date(d);
-  const today = window.__fixtures?.today ?? new Date();
+  const today = getToday();
   const daysDiff = Math.round((+today - +date) / 86_400_000);
   if (opts.relative) {
     if (daysDiff === 0) return "Today";

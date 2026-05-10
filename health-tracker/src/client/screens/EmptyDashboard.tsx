@@ -20,6 +20,7 @@ import type { ReactNode } from "react";
 import type { Entry, Member } from "../../lib/types";
 import { fmtDate, fmtDateLong } from "../lib/format";
 import { fmtWeight } from "../lib/units";
+import { getToday } from "../store";
 
 export type EmptyDashboardProps = {
   me: Member;
@@ -34,7 +35,7 @@ export function EmptyDashboard({
 }: EmptyDashboardProps) {
   const myEntries = entries.filter((e) => e.memberId === me.id);
   const count = myEntries.length;
-  const today = window.__fixtures?.today ?? new Date();
+  const today = getToday();
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";

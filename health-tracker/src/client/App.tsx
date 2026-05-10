@@ -12,11 +12,10 @@ import {
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { type ReactElement, useEffect, useState } from "react";
-import type { Entry, Member, Theme, Units } from "../lib/types";
+import type { Entry, Household, Member, Theme, Units } from "../lib/types";
 import { db } from "./api";
 import { Avatar } from "./components/Avatar";
 import { Logo } from "./components/Logo";
-import "./fixtures";
 import { AddMemberModal } from "./modals/AddMemberModal";
 import { LogWeightModal } from "./modals/LogWeightModal";
 import { type MilestoneKind, MilestoneModal } from "./modals/MilestoneModal";
@@ -28,8 +27,8 @@ import { EntriesScreen } from "./screens/EntriesScreen";
 import { FirstRun } from "./screens/FirstRun";
 import { HouseholdScreen } from "./screens/HouseholdScreen";
 import { ProfileScreen } from "./screens/ProfileScreen";
+import { getToday, useStore } from "./store";
 import "./styles.css";
-import { useStore } from "./store";
 
 type LogModalState = {
   existing: Entry | { date: string } | null;
@@ -139,6 +138,7 @@ export function App() {
       me={me}
       members={state.members}
       entries={state.entries}
+      household={state.household}
       tab={tab}
       setTab={setTab}
       units={units}
@@ -160,6 +160,7 @@ type AuthedAppProps = {
   me: Member;
   members: Member[];
   entries: Entry[];
+  household: Household | null;
   tab: TabId;
   setTab: (tab: TabId) => void;
   units: Units;
@@ -179,6 +180,7 @@ function AuthedApp({
   me,
   members,
   entries,
+  household,
   tab,
   setTab,
   units,
@@ -204,8 +206,7 @@ function AuthedApp({
   }
   function openToday(): void {
     const myEntries = entries.filter((e) => e.memberId === me.id);
-    const today = window.__fixtures?.today ?? new Date();
-    const todayKey = today.toISOString().slice(0, 10);
+    const todayKey = getToday().toISOString().slice(0, 10);
     const existing = myEntries.find((e) => e.date.slice(0, 10) === todayKey);
     setLogModal({ existing: existing ?? null });
   }
@@ -280,7 +281,7 @@ function AuthedApp({
       screen = null;
   }
 
-  const householdName = window.__fixtures?.household?.name ?? "Household";
+  const householdName = household?.name ?? "Household";
 
   return (
     <>

@@ -3,6 +3,7 @@ import { IconX } from "@tabler/icons-react";
 import type { Entry, Member, Units } from "../../lib/types";
 import { Stat } from "../components/Stat";
 import { fmtDelta } from "../lib/units";
+import { getToday } from "../store";
 
 export type FirstOfMonthCardProps = {
   me: Member;
@@ -17,7 +18,7 @@ export function FirstOfMonthCard({
   units,
   onDismiss,
 }: FirstOfMonthCardProps) {
-  const today = window.__fixtures?.today ?? new Date();
+  const today = getToday();
   const dayOfMonth = today.getDate();
   if (dayOfMonth > 7) return null;
 

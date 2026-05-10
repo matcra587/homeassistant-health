@@ -1,4 +1,5 @@
 import type { Entry, Member, Sex } from "../../lib/types";
+import { getToday } from "../store";
 
 export function calcBMI(
   kg: number | null | undefined,
@@ -77,7 +78,7 @@ export function calcStreak(entries: Entry[], gracePeriodDays = 1): StreakInfo {
   const lastEntry = sorted[0];
   if (!lastEntry) return { length: 0, lastEntry: null, broken: false };
 
-  const today = window.__fixtures?.today ?? new Date();
+  const today = getToday();
   const dayKey = (d: string | Date) => new Date(d).toISOString().slice(0, 10);
   const todayKey = dayKey(today);
 
@@ -106,7 +107,7 @@ export function trendDirection(
   days = 14,
 ): { direction: TrendDirection; deltaKg: number } {
   if (entries.length < 3) return { direction: "flat", deltaKg: 0 };
-  const today = window.__fixtures?.today ?? new Date();
+  const today = getToday();
   const cutoff = +today - days * 86_400_000;
   const recent = entries
     .filter((e) => +new Date(e.date) >= cutoff)
@@ -157,7 +158,7 @@ export function calcPacing(
   if (!firstEntry || !lastEntry) return null;
   const startDate = new Date(firstEntry.date);
   const targetDate = new Date(member.targetDate);
-  const today = window.__fixtures?.today ?? new Date();
+  const today = getToday();
   const totalMs = +targetDate - +startDate;
   if (totalMs <= 0) return null;
   const elapsedFrac = Math.max(0, Math.min(1, (+today - +startDate) / totalMs));

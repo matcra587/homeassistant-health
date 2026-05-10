@@ -14,6 +14,7 @@ import { IconCheck } from "@tabler/icons-react";
 import type { Entry, Member, Units } from "../../lib/types";
 import { formatLocalDateKey, parseFormDate } from "../lib/format";
 import { CM_TO_IN, cmToIn, kgToLb, lbToKg } from "../lib/units";
+import { getToday } from "../store";
 
 export type LogWeightModalProps = {
   me: Member;
@@ -38,7 +39,7 @@ export function LogWeightModal({
   onSave,
   onClose,
 }: LogWeightModalProps) {
-  const today = window.__fixtures?.today ?? new Date();
+  const today = getToday();
   const initialDate = existingEntry?.date
     ? new Date(existingEntry.date)
     : new Date(today);

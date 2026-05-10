@@ -27,6 +27,7 @@ import {
 } from "../lib/calc";
 import { fmtDate } from "../lib/format";
 import { fmtDelta, fmtWeight, unitSuffix } from "../lib/units";
+import { getToday } from "../store";
 
 export type HouseholdMode = "now" | "week" | "month";
 
@@ -70,7 +71,7 @@ export function HouseholdScreen({
   onAddMember,
 }: HouseholdScreenProps) {
   const [mode, setMode] = useState<HouseholdMode>("now");
-  const today = window.__fixtures?.today ?? new Date();
+  const today = getToday();
 
   const ranges = useMemo<Ranges>(() => {
     const weekStart = new Date(+today - 6 * 86_400_000);
@@ -283,7 +284,7 @@ function MemberCard({
   const isMe = m.id === me.id;
   const showDetails = m.shareDetails || isMe;
   const broken = streak.broken;
-  const today = window.__fixtures?.today ?? new Date();
+  const today = getToday();
   const sinceLast = streak.lastEntry
     ? Math.floor((+today - +new Date(streak.lastEntry.date)) / 86_400_000)
     : null;
@@ -466,7 +467,7 @@ function WeekBody({
   showDetails,
 }: BodyProps & { ranges: Ranges }) {
   const { m, weekEntries, weekDelta, weekLowest } = summary;
-  const today = window.__fixtures?.today ?? new Date();
+  const today = getToday();
   const positive =
     weekDelta != null &&
     m.startWeightKg != null &&
@@ -566,7 +567,7 @@ function MonthBody({
   showDetails,
 }: BodyProps & { ranges: Ranges }) {
   const { m, monthEntries, monthDelta, monthSwing } = summary;
-  const today = window.__fixtures?.today ?? new Date();
+  const today = getToday();
   const positive =
     monthDelta != null &&
     m.startWeightKg != null &&

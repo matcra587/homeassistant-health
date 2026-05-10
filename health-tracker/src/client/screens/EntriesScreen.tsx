@@ -20,6 +20,7 @@ import type { Entry, Member, Units } from "../../lib/types";
 import { db } from "../api";
 import { fmtDate } from "../lib/format";
 import { cmToIn, fmtDelta, fmtWeight } from "../lib/units";
+import { getToday } from "../store";
 
 export type EntriesScreenProps = {
   me: Member;
@@ -60,7 +61,7 @@ export function EntriesScreen({
 
   const calMonths = useMemo(() => {
     if (!myEntries.length) return [];
-    const today = window.__fixtures?.today ?? new Date();
+    const today = getToday();
     const last = new Date(today.getFullYear(), today.getMonth(), 1);
     const firstEntry = myEntries[myEntries.length - 1];
     if (!firstEntry) return [];
@@ -252,7 +253,7 @@ export function EntriesScreen({
       {view === "calendar" && (
         <Stack gap="xl" maw={460} mx="auto">
           {calMonths.map((monthDate) => {
-            const today = window.__fixtures?.today ?? new Date();
+            const today = getToday();
             const monthName = monthDate.toLocaleDateString("en-US", {
               month: "long",
               year: "numeric",
