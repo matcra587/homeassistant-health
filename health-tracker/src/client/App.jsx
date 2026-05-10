@@ -48,8 +48,11 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import "./styles.css";
-import iconUrl from "../../icon.png";
 import { db } from "./api";
+import { Avatar } from "./components/Avatar";
+import { Logo } from "./components/Logo";
+import { ProgressBar } from "./components/ProgressBar";
+import { Sparkline } from "./components/Sparkline";
 import {
   bmiCategory,
   calcBMI,
@@ -836,66 +839,6 @@ Object.assign(window, {
 
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
-function Avatar({ member, size = 40 }) {
-  return (
-    <span
-      className="avatar"
-      data-tone={member.tone}
-      style={{ width: size, height: size, fontSize: size * 0.42 }}
-      aria-label={member.displayName}
-    >
-      {member.initials}
-    </span>
-  );
-}
-
-
-function ProgressBar({ fraction, color }) {
-  const pct = Math.round(fraction * 100);
-  return (
-    <div
-      style={{
-        position: "relative",
-        height: 6,
-        background: "var(--mantine-color-default-border)",
-        borderRadius: 999,
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: `${pct}%`,
-          background: color || "var(--mantine-primary-color-filled)",
-          borderRadius: 999,
-          transition: "width 600ms cubic-bezier(.2,.8,.2,1)",
-        }}
-      />
-    </div>
-  );
-}
-
-function Logo({ size = 22, width }) {
-  const resolvedWidth = width ?? size;
-  return (
-    <span
-      aria-label="Home Assistant Health"
-      role="img"
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: resolvedWidth,
-        height: size,
-      }}
-    >
-      <img src={iconUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-    </span>
-  );
-}
-
-Object.assign(window, { Avatar, ProgressBar, Logo });
 
 
 // ---- chart.jsx ----
@@ -987,41 +930,7 @@ function WeightChart({ entries, member, units, height = 280 }) {
   );
 }
 
-function Sparkline({ entries, width = 100, height = 30, color = "var(--mantine-primary-color-filled)" }) {
-  if (entries.length < 2) {
-    return (
-      <div
-        style={{
-          width,
-          height,
-          display: "flex",
-          alignItems: "center",
-          color: "var(--mantine-color-dimmed)",
-          fontSize: 11,
-          fontStyle: "italic",
-        }}
-      >
-        just starting
-      </div>
-    );
-  }
-  const sorted = [...entries].sort((a, b) => +new Date(a.date) - +new Date(b.date));
-  const ys = sorted.map((e) => e.weightKg);
-  const min = Math.min(...ys), max = Math.max(...ys);
-  const span = max - min || 1;
-  const pts = sorted.map((e, i) => [
-    (i / (sorted.length - 1)) * width,
-    height - ((e.weightKg - min) / span) * (height - 4) - 2,
-  ]);
-  const d = pts.reduce((acc, p, i) => acc + (i === 0 ? `M ${p[0]} ${p[1]}` : ` L ${p[0]} ${p[1]}`), "");
-  return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-      <path d={d} fill="none" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-Object.assign(window, { WeightChart, Sparkline, RANGE_DAYS });
+Object.assign(window, { WeightChart, RANGE_DAYS });
 
 
 // ---- screens.jsx ----
