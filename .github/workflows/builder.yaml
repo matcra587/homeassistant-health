@@ -49,7 +49,7 @@ jobs:
         env:
           BEFORE_SHA: ${{ github.event.before }}
           EVENT_NAME: ${{ github.event_name }}
-          REQUESTED_PUBLISH: ${{ inputs.publish || false }}
+          REQUESTED_PUBLISH: ${{ github.event.inputs.publish || 'false' }}
         run: |
           set -euo pipefail
 
