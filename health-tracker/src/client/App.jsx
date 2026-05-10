@@ -1353,8 +1353,9 @@ function Dashboard({ me, entries, units, onLogToday, onEditEntry }) {
   const dayDelta = previous ? latest.weightKg - previous.weightKg : 0;
   const fromGoal = latest ? latest.weightKg - me.goalWeightKg : 0;
 
-  // Greeting
-  const hour = today.getHours();
+  // Greeting derives from the actual wall-clock hour, not the fixtures' "today"
+  // (whose hours are pinned to 7:30 for entry-timestamp determinism).
+  const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   const pacingColor = pacing
@@ -2882,7 +2883,7 @@ function EmptyDashboard({ me, entries, onLogToday }) {
   const myEntries = entries.filter((e) => e.memberId === me.id);
   const count = myEntries.length;
   const today = window.__fixtures.today;
-  const hour = today.getHours();
+  const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   return (
