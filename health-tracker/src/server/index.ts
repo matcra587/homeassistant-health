@@ -2,12 +2,18 @@ import { serve } from "bun";
 import { getHealthStatus, getReadinessStatus } from "../lib/health";
 import index from "./index.html";
 import {
+  EntryDeleteSchema,
+  EntrySchema,
+  MemberDeleteSchema,
+  MemberPatchRequestSchema,
+  MemberSchema,
+  parseBody,
+} from "./schemas";
+import {
   bootstrap,
   csvExport,
   deleteEntry,
   deleteMember,
-  type Entry,
-  type Member,
   saveEntry,
   saveMember,
   updateMember,
@@ -30,12 +36,16 @@ function readyResponse(): Response {
   return new Response(`${getReadinessStatus()}\n`, { headers: readyHeaders });
 }
 
-async function readJson<T>(request: Request): Promise<T> {
+async function readJson(request: Request): Promise<unknown> {
   const text = await request.text();
   if (!text.trim()) {
-    return {} as T;
+    return {};
   }
-  return JSON.parse(text) as T;
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Response("Request body is not valid JSON", { status: 400 });
+  }
 }
 
 function noContent(): Response {
@@ -73,14 +83,14 @@ const server = serve({
     "/api/entries": {
       POST: route(async (request) =>
         Response.json(
-          saveEntry(request.headers, await readJson<Entry>(request)),
+          saveEntry(
+            request.headers,
+            parseBody(EntrySchema, await readJson(request)),
+          ),
         ),
       ),
       DELETE: route(async (request) => {
-        const { id } = await readJson<{ id?: string }>(request);
-        if (!id) {
-          return new Response("Entry id is required", { status: 400 });
-        }
+        const { id } = parseBody(EntryDeleteSchema, await readJson(request));
         deleteEntry(request.headers, id);
         return noContent();
       }),
@@ -97,25 +107,22 @@ const server = serve({
     "/api/members": {
       POST: route(async (request) =>
         Response.json(
-          saveMember(request.headers, await readJson<Member>(request)),
+          saveMember(
+            request.headers,
+            parseBody(MemberSchema, await readJson(request)),
+          ),
         ),
       ),
       PATCH: route(async (request) => {
-        const { id, patch } = await readJson<{
-          id?: string;
-          patch?: Partial<Member>;
-        }>(request);
-        if (!id) {
-          return new Response("Member id is required", { status: 400 });
-        }
-        updateMember(request.headers, id, patch ?? {});
+        const { id, patch } = parseBody(
+          MemberPatchRequestSchema,
+          await readJson(request),
+        );
+        updateMember(request.headers, id, patch);
         return noContent();
       }),
       DELETE: route(async (request) => {
-        const { id } = await readJson<{ id?: string }>(request);
-        if (!id) {
-          return new Response("Member id is required", { status: 400 });
-        }
+        const { id } = parseBody(MemberDeleteSchema, await readJson(request));
         deleteMember(request.headers, id);
         return noContent();
       }),
