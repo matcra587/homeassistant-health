@@ -1,0 +1,24 @@
+#:schema https://mise.en.dev/schema/mise.json
+min_version = "2026.5.0"
+
+[settings]
+lockfile = true
+
+[tools]
+actionlint = "latest"
+biome = "latest"
+bun = "latest"
+hadolint = "latest"
+hk = "latest"
+pkl = "latest"
+rumdl = "latest"
+shellcheck = "latest"
+zizmor = "latest"
+
+[env]
+HK_MISE = 1
+DO_NOT_TRACK = 1
+APP_DIR = "health-tracker/rootfs/app"
+
+[task_config]
+includes = ["tasks.toml"]

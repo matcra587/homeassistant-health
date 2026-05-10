@@ -1,0 +1,41 @@
+amends "package://github.com/jdx/hk/releases/download/v1.45.0/hk@1.45.0#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v1.45.0/hk@1.45.0#/Builtins.pkl"
+
+min_hk_version = "1.45.0"
+
+local shellcheck = (Builtins.shellcheck) {
+    glob = List("**/*.sh", "health-tracker/rootfs/etc/services.d/*/run", "health-tracker/rootfs/etc/services.d/*/finish")
+    check = "shellcheck -x {{ files }}"
+}
+
+local linters = new Mapping<String, Step> {
+    ["actionlint"] = Builtins.actionlint
+    ["biome"] = Builtins.biome
+    ["hadolint"] = Builtins.hadolint
+    ["rumdl"] = Builtins.rumdl
+    ["shellcheck"] = shellcheck
+    ["zizmor"] = Builtins.zizmor
+}
+
+hooks {
+    ["pre-commit"] {
+        fix = true
+        stash = "git"
+        steps = linters
+    }
+    ["pre-push"] {
+        steps = linters
+    }
+    ["check"] {
+        steps = linters
+    }
+    ["fix"] {
+        fix = true
+        steps = linters
+    }
+    ["commit-msg"] {
+        steps {
+            ["conventional"] = Builtins.check_conventional_commit
+        }
+    }
+}
