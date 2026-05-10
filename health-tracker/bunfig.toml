@@ -1,0 +1,16 @@
+# Bun configuration.
+#
+# Currently scoped to test discovery — restricts the runner to the `tests/`
+# directory so that source files happening to match `*.test.ts` (none yet)
+# don't get picked up by accident as the codebase grows.
+#
+# Coverage is left at Bun's defaults; flip on per-invocation with
+# `bun test --coverage` rather than baking it into the default loop.
+
+[test]
+root = "tests"
+
+[install]
+# Match the v1.2+ default explicitly so a newer Bun changing this
+# silently doesn't switch us to the binary lockfile mid-PR.
+saveTextLockfile = true
