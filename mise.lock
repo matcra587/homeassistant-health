@@ -59,65 +59,6 @@ checksum = "sha256:6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f
 url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_windows_amd64.zip"
 provenance = "github-attestations"
 
-[[tools.biome]]
-version = "2.4.14"
-backend = "aqua:biomejs/biome"
-
-[tools.biome."platforms.linux-arm64"]
-checksum = "sha256:e95a6d5bdfb62c92f18268945ae0a6d0709248691a1d169e828991fae81d193a"
-url = "https://github.com/biomejs/biome/releases/download/%40biomejs/biome%402.4.14/biome-linux-arm64"
-provenance = "github-attestations"
-
-[tools.biome."platforms.linux-arm64-musl"]
-checksum = "sha256:756b7d7dbd3d5d857c40638776f930c234bc69f6f5c0ed13c8acedfb87147bac"
-url = "https://github.com/biomejs/biome/releases/download/%40biomejs/biome%402.4.14/biome-linux-arm64-musl"
-provenance = "github-attestations"
-
-[tools.biome."platforms.linux-x64"]
-checksum = "sha256:77b36a64b00589020e8e8c7ecb869f1721ed2b933dad186077490fb5cdc173cc"
-url = "https://github.com/biomejs/biome/releases/download/%40biomejs/biome%402.4.14/biome-linux-x64"
-provenance = "github-attestations"
-
-[tools.biome."platforms.linux-x64-baseline"]
-checksum = "sha256:77b36a64b00589020e8e8c7ecb869f1721ed2b933dad186077490fb5cdc173cc"
-url = "https://github.com/biomejs/biome/releases/download/%40biomejs/biome%402.4.14/biome-linux-x64"
-provenance = "github-attestations"
-
-[tools.biome."platforms.linux-x64-musl"]
-checksum = "sha256:c3b6f38eccb72a9d41afb5a3b38976f590380111cb3e878bf9121f998e8c274e"
-url = "https://github.com/biomejs/biome/releases/download/%40biomejs/biome%402.4.14/biome-linux-x64-musl"
-provenance = "github-attestations"
-
-[tools.biome."platforms.linux-x64-musl-baseline"]
-checksum = "sha256:c3b6f38eccb72a9d41afb5a3b38976f590380111cb3e878bf9121f998e8c274e"
-url = "https://github.com/biomejs/biome/releases/download/%40biomejs/biome%402.4.14/biome-linux-x64-musl"
-provenance = "github-attestations"
-
-[tools.biome."platforms.macos-arm64"]
-checksum = "sha256:13895170d26b0a9818532b84f33e04a2980b46cbb7e86d43ecc606c6bd1b1e63"
-url = "https://github.com/biomejs/biome/releases/download/%40biomejs/biome%402.4.14/biome-darwin-arm64"
-provenance = "github-attestations"
-
-[tools.biome."platforms.macos-x64"]
-checksum = "sha256:dc835f90255a5c9c1734d3adb07ac142396187953545029e0aeab82177e466c6"
-url = "https://github.com/biomejs/biome/releases/download/%40biomejs/biome%402.4.14/biome-darwin-x64"
-provenance = "github-attestations"
-
-[tools.biome."platforms.macos-x64-baseline"]
-checksum = "sha256:dc835f90255a5c9c1734d3adb07ac142396187953545029e0aeab82177e466c6"
-url = "https://github.com/biomejs/biome/releases/download/%40biomejs/biome%402.4.14/biome-darwin-x64"
-provenance = "github-attestations"
-
-[tools.biome."platforms.windows-x64"]
-checksum = "sha256:6aad48b69bb0699394f93c34fc700bf1b20130aeb7101e52fccf5d306b65ab92"
-url = "https://github.com/biomejs/biome/releases/download/%40biomejs/biome%402.4.14/biome-win32-x64.exe"
-provenance = "github-attestations"
-
-[tools.biome."platforms.windows-x64-baseline"]
-checksum = "sha256:6aad48b69bb0699394f93c34fc700bf1b20130aeb7101e52fccf5d306b65ab92"
-url = "https://github.com/biomejs/biome/releases/download/%40biomejs/biome%402.4.14/biome-win32-x64.exe"
-provenance = "github-attestations"
-
 [[tools.bun]]
 version = "1.3.13"
 backend = "core:bun"

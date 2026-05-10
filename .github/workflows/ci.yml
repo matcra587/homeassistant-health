@@ -1,0 +1,139 @@
+---
+name: ci
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  ts-test:
+    name: TypeScript test
+    needs: ts-lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Install mise
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+        with:
+          version: 2026.5.0
+          github_token: ${{ github.token }}
+
+      - name: Install dependencies
+        run: mise run deps
+
+      - name: Build
+        run: mise run build
+
+      - name: Test
+        run: mise run test:ts
+
+      - name: Typecheck
+        run: mise run typecheck
+
+  ts-lint:
+    name: TypeScript lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Install mise
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+        with:
+          version: 2026.5.0
+          github_token: ${{ github.token }}
+
+      - name: Install dependencies
+        run: mise run deps
+
+      - name: Run Biome
+        run: mise run lint:ts
+
+  md-lint:
+    name: Markdown lint
+    uses: matcra587/github-actions/.github/workflows/md-lint.yml@67f0de0d0ceebe69895e868207c04e5c66b3bde8
+    permissions:
+      contents: read
+
+  docker-test:
+    name: Docker test
+    needs: docker-lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      DOCKER_BUILD_ARCH: amd64
+      DOCKER_BUILD_VERSION: 0.1.0
+      DOCKER_IMAGE: homeassistant-health:test
+      DOCKER_PLATFORM: linux/amd64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Install mise
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+        with:
+          version: 2026.5.0
+          github_token: ${{ github.token }}
+          cache: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+
+      - name: Build and export to Docker
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
+        with:
+          context: health-tracker
+          load: true
+          platforms: ${{ env.DOCKER_PLATFORM }}
+          tags: ${{ env.DOCKER_IMAGE }}
+          build-args: |
+            BUILD_ARCH=${{ env.DOCKER_BUILD_ARCH }}
+            BUILD_VERSION=${{ env.DOCKER_BUILD_VERSION }}
+
+      - name: Smoke test image
+        run: mise run test:docker
+
+  docker-lint:
+    name: Docker lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Install mise
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+        with:
+          version: 2026.5.0
+          github_token: ${{ github.token }}
+
+      - name: Run hadolint
+        run: mise run lint:docker
+
+      - name: Run shellcheck
+        run: mise run lint:shell

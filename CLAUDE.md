@@ -4,26 +4,32 @@ Home Assistant add-on repository for a family health tracker.
 
 ## Architecture
 
-*   Bun runtime and package manager
-*   Vite + React browser app
-*   Bun API server for persistence and Home Assistant integration
-*   SQLite via `bun:sqlite`
+*   Bun runtime, package manager, bundler, and test runner
+*   Bun fullstack server with HTML imports
+*   React browser app
+*   SQLite via `bun:sqlite` for persistence
 
 ## Expected Layout
 
 ```text
+repository.yaml           Home Assistant app repository metadata
 health-tracker/
-  config.yaml             Home Assistant add-on metadata
-  build.yaml              Home Assistant builder config
-  Dockerfile              Add-on image build
-  rootfs/
-    app/
-      package.json
-      vite.config.ts      Vite config, use base: "./" for embedded ingress
-      src/client/         React SPA
-      src/server/         Bun API/static server
-      src/lib/            SQLite, calculations, shared types
-      tests/              Bun tests
+  translations/en.yaml    Home Assistant app translations
+  apparmor.txt            AppArmor profile
+  CHANGELOG.md            app changelog
+  config.yaml             Home Assistant app metadata
+  DOCS.md                 app documentation
+  Dockerfile              app image build
+  icon.png                square app icon
+  logo.png                app logo
+  README.md               app store intro
+  run.sh                  container start script
+  package.json            Bun app package
+  bun.lock                Bun dependency lockfile
+  src/client/             React browser app
+  src/server/             Bun API/static server
+  src/lib/                SQLite, calculations, shared types
+  tests/                  Bun tests
 ```
 
 ## Commands
@@ -34,15 +40,15 @@ mise tasks                # List available tasks
 mise run deps             # Install app dependencies
 mise run dev              # Start the app dev server
 mise run build            # Build production assets/server
-mise run test             # Run Bun tests
-mise run lint             # Run Biome checks
-mise run dockerfile:lint  # Run hadolint against Dockerfiles
-mise run rumdl            # Lint Markdown
+mise run test             # Run all tests
+mise run test:ts          # Run Bun tests
+mise run lint             # Run all lint checks
+mise run lint:ts          # Run Biome checks
+mise run lint:docker      # Run hadolint against Dockerfiles
+mise run lint:md          # Lint Markdown
 mise run check            # Run local verification
 mise run pre-commit       # Run hk pre-commit hook
 ```
-
-Until `health-tracker/rootfs/app/package.json` exists, app-scoped tasks print a skip message instead of failing.
 
 ## Tooling
 
@@ -54,7 +60,8 @@ Until `health-tracker/rootfs/app/package.json` exists, app-scoped tasks print a 
 
 ## Development Notes
 
-*   Keep Home Assistant ingress in mind. Vite should use a relative base (`"./"`) so built assets work under Supervisor-provided paths.
-*   Keep server-only code out of the React bundle. SQLite, Supervisor API calls, and filesystem access belong under `src/server/` or `src/lib/` modules imported only by the server.
+*   Keep Home Assistant ingress in mind. Bun HTML imports should avoid assumptions about fixed external asset paths.
+*   Keep `health-tracker/README.md` as the Home Assistant store intro. Use `health-tracker/DOCS.md` for usage details, routes, storage, and local build notes.
+*   Keep server-only code out of the React bundle. SQLite, Supervisor API calls, and filesystem access belong under `health-tracker/src/server/` or `health-tracker/src/lib/` modules imported only by the server.
 *   Prefer small, explicit API endpoints under `/api/*`; keep routing and request handling plain.
 *   Do not commit local secrets, Home Assistant tokens, SQLite databases, or `.claude/settings.local.json`.

@@ -2,6 +2,28 @@
 version: 2
 
 updates:
+  - package-ecosystem: npm
+    directory: /health-tracker
+    schedule:
+      interval: weekly
+      day: friday
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: deps
+    labels:
+      - dependencies
+      - npm
+    groups:
+      npm-minor-patch:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+
   - package-ecosystem: github-actions
     directory: /
     schedule:

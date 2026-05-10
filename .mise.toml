@@ -6,7 +6,6 @@ lockfile = true
 
 [tools]
 actionlint = "latest"
-biome = "latest"
 bun = "latest"
 hadolint = "latest"
 hk = "latest"
@@ -18,7 +17,13 @@ zizmor = "latest"
 [env]
 HK_MISE = 1
 DO_NOT_TRACK = 1
-APP_DIR = "health-tracker/rootfs/app"
+APP_DIR = "health-tracker"
+DOCKER_BUILD_ARCH = "amd64"
+DOCKER_BUILD_VERSION = "0.1.0"
+DOCKER_IMAGE = "homeassistant-health:test"
+DOCKER_PLATFORM = "linux/amd64"
+DOCKER_TEST_RETRIES = "20"
+DOCKER_TEST_RETRY_DELAY = "1"
 
 [task_config]
 includes = ["tasks.toml"]

@@ -4,13 +4,26 @@ import "package://github.com/jdx/hk/releases/download/v1.45.0/hk@1.45.0#/Builtin
 min_hk_version = "1.45.0"
 
 local shellcheck = (Builtins.shellcheck) {
-    glob = List("**/*.sh", "health-tracker/rootfs/etc/services.d/*/run", "health-tracker/rootfs/etc/services.d/*/finish")
+    glob = List("**/*.sh", ".mise/tasks/*", "health-tracker/rootfs/etc/services.d/*/run", "health-tracker/rootfs/etc/services.d/*/finish")
     check = "shellcheck -x {{ files }}"
+}
+
+local biome = (Builtins.biome) {
+    glob = List(
+        "health-tracker/src/**/*.ts",
+        "health-tracker/src/**/*.tsx",
+        "health-tracker/tests/**/*.ts",
+        "health-tracker/package.json",
+        "health-tracker/tsconfig.json",
+    )
+    check = "cd health-tracker && bun run lint"
+    fix = "cd health-tracker && bun run lint:fix"
+    batch = true
 }
 
 local linters = new Mapping<String, Step> {
     ["actionlint"] = Builtins.actionlint
-    ["biome"] = Builtins.biome
+    ["biome"] = biome
     ["hadolint"] = Builtins.hadolint
     ["rumdl"] = Builtins.rumdl
     ["shellcheck"] = shellcheck

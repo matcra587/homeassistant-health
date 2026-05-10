@@ -1,6 +1,12 @@
 # homeassistant-health
 
-Home Assistant add-on repository for a family health tracker.
+Home Assistant app repository for a family health tracker.
+
+## Apps
+
+### Home Assistant Health
+
+The app lives in [`health-tracker/`](health-tracker/).
 
 ## Feature Set
 

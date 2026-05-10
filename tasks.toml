@@ -7,15 +7,15 @@ run = "mise tasks"
 
 [check]
 description = "Run local verification checks"
-depends = ["lint", "test", "build", "rumdl", "dockerfile:lint", "shell:lint"]
+depends = ["typecheck", "test", "build", "lint"]
 
 [ci]
 description = "Run CI-equivalent checks"
-depends = ["check", "workflow:lint", "workflow:security"]
+depends = ["check", "lint:workflow:security"]
 
 [fix]
 description = "Apply automatic formatting and lint fixes"
-depends = ["fmt", "lint:fix", "rumdl:fix"]
+depends = ["fmt", "lint:ts:fix", "lint:md:fix"]
 
 [deps]
 description = "Install app dependencies"
@@ -51,13 +51,31 @@ else
 fi
 '''
 sources = [
-  "health-tracker/rootfs/app/**/*",
+  "health-tracker/src/**/*",
+  "health-tracker/tests/**/*",
+  "health-tracker/package.json",
+  "health-tracker/bun.lock",
+  "health-tracker/tsconfig.json",
   "health-tracker/config.yaml",
-  "health-tracker/build.yaml",
   "health-tracker/Dockerfile",
 ]
 
+[typecheck]
+description = "Run TypeScript type checks"
+run = '''
+if [ -f "${APP_DIR}/package.json" ]; then
+  cd "${APP_DIR}" && bun run typecheck
+else
+  echo "skipping typecheck: ${APP_DIR}/package.json not found"
+fi
+'''
+
 [test]
+description = "Run all tests"
+alias = "t"
+depends = ["test:ts"]
+
+["test:ts"]
 description = "Run Bun tests"
 alias = "t"
 raw_args = true
@@ -70,6 +88,10 @@ fi
 '''
 
 [lint]
+description = "Run all lint checks"
+depends = ["lint:ts", "lint:md", "lint:docker", "lint:shell", "lint:workflow"]
+
+["lint:ts"]
 description = "Run Biome checks"
 raw_args = true
 run = '''
@@ -80,12 +102,12 @@ else
 fi
 '''
 
-["lint:fix"]
+["lint:ts:fix"]
 description = "Run Biome with automatic fixes"
 raw_args = true
 run = '''
 if [ -f "${APP_DIR}/package.json" ]; then
-  cd "${APP_DIR}" && bun run check "$@"
+  cd "${APP_DIR}" && bun run lint:fix "$@"
 else
   echo "skipping lint:fix: ${APP_DIR}/package.json not found"
 fi
@@ -102,28 +124,32 @@ else
 fi
 '''
 
-[rumdl]
+["lint:md"]
 description = "Lint Markdown files with rumdl"
 run = "rumdl check ."
 
-["rumdl:fix"]
+["lint:md:fix"]
 description = "Fix Markdown files with rumdl"
 raw_args = true
 run = "rumdl fix"
 
-["dockerfile:lint"]
+["lint:docker"]
 description = "Lint Dockerfiles with hadolint"
-run = "files=$(find . -path ./.git -prune -o -path ./node_modules -prune -o -name Dockerfile -type f -print); if [ -n \"$files\" ]; then hadolint $files; else echo 'skipping Dockerfile lint: no Dockerfiles found'; fi"
+run = "files=$(find . -path ./.git -prune -o -path '*/node_modules' -prune -o -path '*/dist' -prune -o -name Dockerfile -type f -print); if [ -n \"$files\" ]; then hadolint $files; else echo 'skipping Dockerfile lint: no Dockerfiles found'; fi"
 
-["shell:lint"]
+["test:docker"]
+description = "Smoke test the built Docker image"
+file = ".mise/tasks/docker-test"
+
+["lint:shell"]
 description = "Lint shell scripts with shellcheck"
-run = "files=$(find . -path ./.git -prune -o -path ./node_modules -prune -o -path ./.rumdl_cache -prune -o \\( -name '*.sh' -o -path './health-tracker/rootfs/etc/services.d/*/run' -o -path './health-tracker/rootfs/etc/services.d/*/finish' \\) -type f -print); if [ -n \"$files\" ]; then shellcheck -x $files; else echo 'skipping shell lint: no shell scripts found'; fi"
+run = "files=$(find . -path ./.git -prune -o -path '*/node_modules' -prune -o -path '*/dist' -prune -o -path ./.rumdl_cache -prune -o \\( -name '*.sh' -o -path './.mise/tasks/*' -o -path './health-tracker/rootfs/etc/services.d/*/run' -o -path './health-tracker/rootfs/etc/services.d/*/finish' \\) -type f -print); if [ -n \"$files\" ]; then shellcheck -x $files; else echo 'skipping shell lint: no shell scripts found'; fi"
 
-["workflow:lint"]
+["lint:workflow"]
 description = "Lint GitHub Actions workflows"
 run = "if [ -d .github/workflows ]; then actionlint -color; else echo 'skipping workflow lint: .github/workflows not found'; fi"
 
-["workflow:security"]
+["lint:workflow:security"]
 description = "Scan GitHub Actions workflows with zizmor"
 run = "if [ -d .github/workflows ]; then zizmor ./.github/ --persona pedantic --offline --no-progress --color never; else echo 'skipping workflow security scan: .github/workflows not found'; fi"
 
