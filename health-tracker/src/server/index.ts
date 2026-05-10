@@ -20,9 +20,6 @@ import {
   updateMember,
 } from "./tracker-store";
 
-const port = Number(Bun.env.PORT ?? "3000");
-const hostname = Bun.env.HOST ?? "0.0.0.0";
-const development = Bun.env.NODE_ENV !== "production";
 const readyHeaders = { "content-type": "text/plain; charset=utf-8" };
 const csvHeaders = {
   "content-disposition": 'attachment; filename="homeassistant-health.csv"',
@@ -72,76 +69,104 @@ function route(handler: (request: Request) => Response | Promise<Response>) {
   };
 }
 
-const server = serve({
-  hostname,
-  port,
-  development,
-  routes: {
-    "/": index,
-    "/api/bootstrap": {
-      GET: route((request) => Response.json(bootstrap(request.headers))),
-    },
-    "/api/entries": {
-      POST: route(async (request) =>
-        Response.json(
-          saveEntry(
-            request.headers,
-            parseBody(EntrySchema, await readJson(request)),
-          ),
-        ),
-      ),
-      DELETE: route(async (request) => {
-        const { id } = parseBody(EntryDeleteSchema, await readJson(request));
-        deleteEntry(request.headers, id);
-        return noContent();
-      }),
-    },
-    "/api/export/csv": {
-      GET: route(
-        (request) =>
-          new Response(csvExport(request.headers), { headers: csvHeaders }),
-      ),
-    },
-    "/api/health": {
-      GET: healthResponse,
-    },
-    "/api/members": {
-      POST: route(async (request) =>
-        Response.json(
-          saveMember(
-            request.headers,
-            parseBody(MemberSchema, await readJson(request)),
-          ),
-        ),
-      ),
-      PATCH: route(async (request) => {
-        const { id, patch } = parseBody(
-          MemberPatchRequestSchema,
-          await readJson(request),
-        );
-        // Schema infers `{ id?: string | undefined }`; Partial<Member> with
-        // exactOptionalPropertyTypes wants `{ id?: string }`. Structurally
-        // identical at runtime — cast at the boundary instead of widening
-        // the upstream type.
-        updateMember(request.headers, id, patch as Partial<Member>);
-        return noContent();
-      }),
-      DELETE: route(async (request) => {
-        const { id } = parseBody(MemberDeleteSchema, await readJson(request));
-        deleteMember(request.headers, id);
-        return noContent();
-      }),
-    },
-    "/healthz": {
-      GET: healthResponse,
-    },
-    "/api/ready": {
-      GET: readyResponse,
-    },
-    "/readyz": {
-      GET: readyResponse,
-    },
-  },
-});
+export type ServerOptions = {
+  port?: number;
+  hostname?: string;
+  /** When true, requests without Home Assistant ingress headers get 401. When
+   * false, they fall through to a synthetic dev user (handy for local dev and
+   * tests). Defaults to `NODE_ENV === "production"` so prod stays locked down
+   * without explicit opt-in. */
+  requireIngress?: boolean;
+};
 
-console.log(`homeassistant-health listening on ${server.url}`);
+export function createServer(options: ServerOptions = {}) {
+  const requireIngress =
+    options.requireIngress ?? Bun.env.NODE_ENV === "production";
+  return serve({
+    hostname: options.hostname ?? Bun.env.HOST ?? "0.0.0.0",
+    port: options.port ?? Number(Bun.env.PORT ?? "3000"),
+    development: Bun.env.NODE_ENV !== "production",
+    routes: {
+      "/": index,
+      "/api/bootstrap": {
+        GET: route((request) =>
+          Response.json(bootstrap(request.headers, requireIngress)),
+        ),
+      },
+      "/api/entries": {
+        POST: route(async (request) =>
+          Response.json(
+            saveEntry(
+              request.headers,
+              parseBody(EntrySchema, await readJson(request)),
+              requireIngress,
+            ),
+          ),
+        ),
+        DELETE: route(async (request) => {
+          const { id } = parseBody(EntryDeleteSchema, await readJson(request));
+          deleteEntry(request.headers, id, requireIngress);
+          return noContent();
+        }),
+      },
+      "/api/export/csv": {
+        GET: route(
+          (request) =>
+            new Response(csvExport(request.headers, requireIngress), {
+              headers: csvHeaders,
+            }),
+        ),
+      },
+      "/api/health": {
+        GET: healthResponse,
+      },
+      "/api/members": {
+        POST: route(async (request) =>
+          Response.json(
+            saveMember(
+              request.headers,
+              parseBody(MemberSchema, await readJson(request)),
+              requireIngress,
+            ),
+          ),
+        ),
+        PATCH: route(async (request) => {
+          const { id, patch } = parseBody(
+            MemberPatchRequestSchema,
+            await readJson(request),
+          );
+          // Schema infers `{ id?: string | undefined }`; Partial<Member> with
+          // exactOptionalPropertyTypes wants `{ id?: string }`. Structurally
+          // identical at runtime — cast at the boundary instead of widening
+          // the upstream type.
+          updateMember(
+            request.headers,
+            id,
+            patch as Partial<Member>,
+            requireIngress,
+          );
+          return noContent();
+        }),
+        DELETE: route(async (request) => {
+          const { id } = parseBody(MemberDeleteSchema, await readJson(request));
+          deleteMember(request.headers, id, requireIngress);
+          return noContent();
+        }),
+      },
+      "/healthz": {
+        GET: healthResponse,
+      },
+      "/api/ready": {
+        GET: readyResponse,
+      },
+      "/readyz": {
+        GET: readyResponse,
+      },
+    },
+  });
+}
+
+if (import.meta.main) {
+  const server = createServer();
+  console.log(`homeassistant-health listening on ${server.url}`);
+}

@@ -113,7 +113,10 @@ function initials(name: string): string {
     .join("");
 }
 
-function currentUserFromHeaders(headers: Headers): CurrentUser {
+function currentUserFromHeaders(
+  headers: Headers,
+  requireIngress: boolean,
+): CurrentUser {
   const id =
     headers.get("x-ha-user-id") ??
     headers.get("x-remote-user-id") ??
@@ -132,7 +135,7 @@ function currentUserFromHeaders(headers: Headers): CurrentUser {
     return { id, displayName, fromHomeAssistant: true };
   }
 
-  if (Bun.env.NODE_ENV !== "production") {
+  if (!requireIngress) {
     return {
       id: DEV_USER.id,
       displayName: DEV_USER.displayName,
@@ -770,11 +773,14 @@ function requireWritableNewMemberId(
   throw new Response("Member is not available to this user", { status: 403 });
 }
 
-function storeForWrite(headers: Headers): {
+function storeForWrite(
+  headers: Headers,
+  requireIngress: boolean,
+): {
   database: Database;
   currentUser: CurrentUser;
 } {
-  const currentUser = currentUserFromHeaders(headers);
+  const currentUser = currentUserFromHeaders(headers, requireIngress);
   const database = getDb();
   ensureHousehold(database);
 
@@ -934,13 +940,16 @@ function household(database: Database): Household {
   };
 }
 
-export function bootstrap(headers: Headers): {
+export function bootstrap(
+  headers: Headers,
+  requireIngress: boolean,
+): {
   members: Member[];
   entries: Entry[];
   household: Household;
   today: string;
 } {
-  const currentUser = currentUserFromHeaders(headers);
+  const currentUser = currentUserFromHeaders(headers, requireIngress);
   const database = getDb();
   ensureHousehold(database);
 
@@ -958,7 +967,11 @@ export function bootstrap(headers: Headers): {
   };
 }
 
-export function saveEntry(headers: Headers, entry: Entry): Entry {
+export function saveEntry(
+  headers: Headers,
+  entry: Entry,
+  requireIngress: boolean,
+): Entry {
   if (entry.weightKg < 20 || entry.weightKg > 300) {
     throw new Response("Weight must be between 20 and 300 kg", { status: 422 });
   }
@@ -968,7 +981,7 @@ export function saveEntry(headers: Headers, entry: Entry): Entry {
     throw new Response("Entry date cannot be in the future", { status: 422 });
   }
 
-  const { database, currentUser } = storeForWrite(headers);
+  const { database, currentUser } = storeForWrite(headers, requireIngress);
   const existingEntry = database
     .prepare<MemberIdRow, [string]>(
       "SELECT member_id FROM entries WHERE id = ?",
@@ -1016,8 +1029,12 @@ export function saveEntry(headers: Headers, entry: Entry): Entry {
   return savedEntry;
 }
 
-export function deleteEntry(headers: Headers, id: string): void {
-  const { database, currentUser } = storeForWrite(headers);
+export function deleteEntry(
+  headers: Headers,
+  id: string,
+  requireIngress: boolean,
+): void {
+  const { database, currentUser } = storeForWrite(headers, requireIngress);
   const row = database
     .prepare<MemberIdRow, [string]>(
       "SELECT member_id FROM entries WHERE id = ?",
@@ -1031,7 +1048,11 @@ export function deleteEntry(headers: Headers, id: string): void {
   database.prepare("DELETE FROM entries WHERE id = ?").run(id);
 }
 
-export function saveMember(headers: Headers, member: Member): Member {
+export function saveMember(
+  headers: Headers,
+  member: Member,
+  requireIngress: boolean,
+): Member {
   if (!member.displayName?.trim()) {
     throw new Response("Member name is required", { status: 422 });
   }
@@ -1096,7 +1117,7 @@ export function saveMember(headers: Headers, member: Member): Member {
     throw new Response("Units are required", { status: 422 });
   }
 
-  const { database, currentUser } = storeForWrite(headers);
+  const { database, currentUser } = storeForWrite(headers, requireIngress);
   const existingMember = getMemberAccess(database, member.id);
   if (existingMember) {
     requireMemberWriteAccess(database, currentUser, member.id);
@@ -1163,6 +1184,7 @@ export function updateMember(
   headers: Headers,
   id: string,
   patch: Partial<Member>,
+  requireIngress: boolean,
 ): void {
   validateProfilePatch(patch);
 
@@ -1206,7 +1228,7 @@ export function updateMember(
     return;
   }
 
-  const { database, currentUser } = storeForWrite(headers);
+  const { database, currentUser } = storeForWrite(headers, requireIngress);
   requireMemberWriteAccess(database, currentUser, id);
 
   sets.push("updated_at = datetime('now')");
@@ -1217,8 +1239,12 @@ export function updateMember(
   refreshProfileComplete(database, id);
 }
 
-export function deleteMember(headers: Headers, id: string): void {
-  const { database, currentUser } = storeForWrite(headers);
+export function deleteMember(
+  headers: Headers,
+  id: string,
+  requireIngress: boolean,
+): void {
+  const { database, currentUser } = storeForWrite(headers, requireIngress);
   requireMemberWriteAccess(database, currentUser, id);
   if (currentUser.fromHomeAssistant && id === currentUser.id) {
     throw new Response("Current user cannot be deleted", { status: 422 });
@@ -1226,8 +1252,8 @@ export function deleteMember(headers: Headers, id: string): void {
   database.prepare("DELETE FROM members WHERE id = ?").run(id);
 }
 
-export function csvExport(headers: Headers): string {
-  const { database, currentUser } = storeForWrite(headers);
+export function csvExport(headers: Headers, requireIngress: boolean): string {
+  const { database, currentUser } = storeForWrite(headers, requireIngress);
   const query = currentUser.fromHomeAssistant
     ? `
       SELECT members.display_name, entries.date, entries.weight_kg, entries.body_fat_pct,
