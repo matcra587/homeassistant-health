@@ -49,7 +49,41 @@ import {
 } from "@tabler/icons-react";
 import "./styles.css";
 import iconUrl from "../../icon.png";
-import { apiUrl } from "./api-url";
+import { db } from "./api";
+import {
+  bmiCategory,
+  calcBMI,
+  calcBMR,
+  calcIdealWeight,
+  calcPacing,
+  calcStreak,
+  calcTDEE,
+  estBodyFat,
+  hasCompleteProfile,
+  progressFraction,
+  trendDirection,
+} from "./lib/calc";
+import {
+  fmtDate,
+  fmtDateLong,
+  formatLocalDateKey,
+  initials,
+  parseFormDate,
+} from "./lib/format";
+import {
+  CM_TO_IN,
+  cmToIn,
+  fmtDelta,
+  fmtWeight,
+  KG_TO_LB,
+  kgToLb,
+  kgToSt,
+  kgToStLb,
+  lbToKg,
+  stLbToKg,
+  unitSuffix,
+} from "./lib/units";
+import { useStore } from "./store";
 
 // ---- fixtures.js ----
 // Seeded fixtures for HomeAssistant Health.
@@ -796,365 +830,6 @@ Object.assign(window, {
 // ---- lib.jsx ----
 // lib.jsx — calc, format, and stub data layer.
 // Swap window.db.* with real server actions; signatures match.
-
-const KG_TO_LB = 2.2046226218;
-const CM_TO_IN = 0.3937007874;
-
-function kgToLb(kg) { return kg * KG_TO_LB; }
-function lbToKg(lb) { return lb / KG_TO_LB; }
-function cmToIn(cm) { return cm * CM_TO_IN; }
-function kgToSt(kg) { return kgToLb(kg) / 14; }
-function stLbToKg(st, lb) { return ((st || 0) * 14 + (lb || 0)) / KG_TO_LB; }
-function kgToStLb(kg) {
-  const totalLb = kgToLb(kg);
-  const st = Math.floor(totalLb / 14);
-  const lb = totalLb - st * 14;
-  return { st, lb };
-}
-
-function fmtWeight(kg, units, opts = {}) {
-  if (kg == null || isNaN(kg)) return "—";
-  if (units === "uk") {
-    if (opts.unitless) return kgToSt(kg).toFixed(opts.dp ?? 1);
-    const { st, lb } = kgToStLb(kg);
-    return `${st} st ${lb.toFixed(opts.lbDp ?? 1)} lb`;
-  }
-  const v = units === "imperial" ? kgToLb(kg) : kg;
-  const dp = opts.dp ?? 1;
-  const num = v.toFixed(dp);
-  const u = units === "imperial" ? "lb" : "kg";
-  return opts.unitless ? num : `${num} ${u}`;
-}
-
-function unitSuffix(units) {
-  return units === "imperial" ? "lb" : units === "uk" ? "st" : "kg";
-}
-
-function fmtHeight(cm, units) {
-  if (units === "imperial" || units === "uk") {
-    const totalIn = cmToIn(cm);
-    const ft = Math.floor(totalIn / 12);
-    const inch = Math.round(totalIn - ft * 12);
-    return `${ft}′${inch}″`;
-  }
-  return `${cm} cm`;
-}
-
-function fmtDelta(kg, units, opts = {}) {
-  if (kg == null || isNaN(kg)) return "—";
-  const sign = kg > 0 ? "+" : kg < 0 ? "−" : "±";
-  if (units === "uk") {
-    const lb = Math.abs(kgToLb(kg));
-    return `${sign}${lb.toFixed(opts.dp ?? 1)} lb`;
-  }
-  const v = Math.abs(units === "imperial" ? kgToLb(kg) : kg);
-  return `${sign}${v.toFixed(opts.dp ?? 1)} ${units === "imperial" ? "lb" : "kg"}`;
-}
-
-function fmtDate(d, opts = {}) {
-  const date = new Date(d);
-  const today = window.__fixtures.today;
-  const daysDiff = Math.round((+today - +date) / 86400000);
-  if (opts.relative) {
-    if (daysDiff === 0) return "Today";
-    if (daysDiff === 1) return "Yesterday";
-    if (daysDiff < 7) return `${daysDiff} days ago`;
-  }
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: opts.year ? "numeric" : undefined });
-}
-
-function fmtDateLong(d) {
-  return new Date(d).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
-}
-
-// Mantine's DateInput returns "YYYY-MM-DD" strings which `new Date(...)` parses
-// as UTC midnight — that shifts to the previous day in negative-UTC timezones.
-// Build the date in local time so the picked day round-trips correctly.
-function parseFormDate(value) {
-  if (value instanceof Date) return new Date(value);
-  if (typeof value === "string") {
-    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (match) {
-      return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-    }
-  }
-  return value ? new Date(value) : null;
-}
-
-// Local-time YYYY-MM-DD key, used for entry IDs and de-duplication so the day
-// stays consistent regardless of the host's timezone offset.
-function formatLocalDateKey(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-// BMI = kg / m^2
-function calcBMI(kg, heightCm) {
-  if (!kg || !heightCm) return null;
-  const m = heightCm / 100;
-  return kg / (m * m);
-}
-
-function bmiCategory(bmi) {
-  if (bmi == null) return null;
-  if (bmi < 18.5) return "Underweight";
-  if (bmi < 25) return "Healthy";
-  if (bmi < 30) return "Overweight";
-  return "Obese";
-}
-
-// Mifflin–St Jeor BMR
-function calcBMR(kg, heightCm, age, sex) {
-  if (!kg || !heightCm || !age) return null;
-  const base = 10 * kg + 6.25 * heightCm - 5 * age;
-  return sex === "M" ? base + 5 : base - 161;
-}
-
-function calcTDEE(kg, heightCm, age, sex, activity) {
-  const bmr = calcBMR(kg, heightCm, age, sex);
-  return bmr ? bmr * activity : null;
-}
-
-// Deurenberg body-fat estimate
-function estBodyFat(kg, heightCm, age, sex) {
-  const bmi = calcBMI(kg, heightCm);
-  if (!bmi) return null;
-  const sexFactor = sex === "M" ? 1 : 0;
-  return 1.20 * bmi + 0.23 * age - 10.8 * sexFactor - 5.4;
-}
-
-// Robinson ideal body weight
-function calcIdealWeight(heightCm, sex) {
-  if (!heightCm) return null;
-  const inchesOver5ft = (heightCm / 2.54) - 60;
-  if (inchesOver5ft <= 0) return sex === "M" ? 52 : 49;
-  return (sex === "M" ? 52 : 49) + (sex === "M" ? 1.9 : 1.7) * inchesOver5ft;
-}
-
-// Streak: consecutive days with at least one entry, counted from most recent entry day.
-// If most recent entry is older than `gracePeriodDays + 1`, streak is 0 (reset).
-function calcStreak(entries, gracePeriodDays = 1) {
-  if (!entries.length) return { length: 0, lastEntry: null, broken: false };
-  const sorted = [...entries].sort((a, b) => +new Date(b.date) - +new Date(a.date));
-  const today = window.__fixtures.today;
-  const dayKey = (d) => new Date(d).toISOString().slice(0, 10);
-  const todayKey = dayKey(today);
-
-  const lastEntryDate = new Date(sorted[0].date);
-  const daysSinceLast = Math.floor((+today - +lastEntryDate) / 86400000);
-  const broken = daysSinceLast > gracePeriodDays;
-  if (broken) return { length: 0, lastEntry: sorted[0], broken: true };
-
-  // Walk back through days
-  const set = new Set(sorted.map((e) => dayKey(e.date)));
-  let count = 0;
-  let cursor = new Date(today);
-  // Allow today to not have an entry yet (within grace window)
-  if (!set.has(todayKey)) {
-    cursor = new Date(+today - 86400000);
-  }
-  while (set.has(dayKey(cursor))) {
-    count++;
-    cursor = new Date(+cursor - 86400000);
-  }
-  return { length: count, lastEntry: sorted[0], broken: false };
-}
-
-function trendDirection(entries, days = 14) {
-  if (entries.length < 3) return { direction: "flat", deltaKg: 0 };
-  const cutoff = +window.__fixtures.today - days * 86400000;
-  const recent = entries.filter((e) => +new Date(e.date) >= cutoff).sort((a, b) => +new Date(a.date) - +new Date(b.date));
-  if (recent.length < 2) return { direction: "flat", deltaKg: 0 };
-  const first = recent[0].weightKg;
-  const last = recent[recent.length - 1].weightKg;
-  const delta = last - first;
-  if (Math.abs(delta) < 0.3) return { direction: "flat", deltaKg: delta };
-  return { direction: delta > 0 ? "up" : "down", deltaKg: delta };
-}
-
-function progressFraction(member, latestKg) {
-  if (!member || latestKg == null) return 0;
-  const span = member.startWeightKg - member.goalWeightKg;
-  if (Math.abs(span) < 0.1) return 1;
-  const done = member.startWeightKg - latestKg;
-  return Math.max(0, Math.min(1, done / span));
-}
-
-// ---- API-backed data layer ----------------------------------------------
-const api = {
-  async request(path, options = {}) {
-    const response = await fetch(apiUrl(path), {
-      ...options,
-      headers: {
-        "content-type": "application/json",
-        ...(options.headers || {}),
-      },
-      body: options.body == null ? undefined : JSON.stringify(options.body),
-    });
-    if (!response.ok) {
-      const message = await response.text();
-      throw new Error(message || `Request failed: ${response.status}`);
-    }
-    if (response.status === 204) return null;
-    return response.json();
-  },
-};
-
-function applyBootstrap(payload) {
-  if (!payload || !window.__app) return;
-  window.__fixtures.household = payload.household || window.__fixtures.household;
-  window.__fixtures.today = payload.today ? new Date(payload.today) : window.__fixtures.today;
-  window.__app.state.members = payload.members || [];
-  window.__app.state.entries = payload.entries || [];
-  window.__app.notify();
-}
-
-function hasCompleteProfile(member) {
-  return Boolean(
-    member &&
-    member.displayName?.trim() &&
-    Number.isFinite(member.heightCm) &&
-    Number.isFinite(member.age) &&
-    (member.sex === "F" || member.sex === "M") &&
-    Number.isFinite(member.activityLevel) &&
-    Number.isFinite(member.startWeightKg) &&
-    Number.isFinite(member.goalWeightKg) &&
-    member.targetDate &&
-    member.units
-  );
-}
-
-const db = {
-  async bootstrap() {
-    const payload = await api.request("/api/bootstrap", { method: "GET", body: null });
-    applyBootstrap(payload);
-    return payload;
-  },
-  async listMembers() { return window.__app.state.members; },
-  async getMember(id) { return window.__app.state.members.find((m) => m.id === id) || null; },
-  async listEntries(memberId) {
-    return window.__app.state.entries.filter((e) => e.memberId === memberId);
-  },
-  async listAllEntries() { return window.__app.state.entries; },
-  async upsertEntry(entry) {
-    const list = window.__app.state.entries;
-    const idx = list.findIndex((e) => e.id === entry.id);
-    if (idx >= 0) list[idx] = entry; else list.unshift(entry);
-    window.__app.notify();
-    api.request("/api/entries", { method: "POST", body: entry }).catch((error) => console.error("Failed to save entry", error));
-    return entry;
-  },
-  async deleteEntry(id) {
-    const list = window.__app.state.entries;
-    const idx = list.findIndex((e) => e.id === id);
-    if (idx >= 0) list.splice(idx, 1);
-    window.__app.notify();
-    api.request("/api/entries", { method: "DELETE", body: { id } }).catch((error) => console.error("Failed to delete entry", error));
-  },
-  async updateMember(id, patch, options = {}) {
-    let saved;
-    const localMember = window.__app.state.members.find((x) => x.id === id) || null;
-    if (localMember?.isMe && /^m\d+$/.test(id)) {
-      await db.bootstrap();
-      const currentMember = window.__app.state.members.find((x) => x.isMe) || null;
-      if (currentMember?.id && currentMember.id !== id) {
-        return db.updateMember(currentMember.id, patch, options);
-      }
-    }
-    try {
-      saved = await api.request("/api/members", { method: "PATCH", body: { id, patch } });
-    } catch (error) {
-      if (error instanceof Error && error.message === "Member not found" && localMember?.isMe) {
-        await db.bootstrap();
-        const currentMember = window.__app.state.members.find((x) => x.isMe) || null;
-        if (currentMember?.id && currentMember.id !== id) {
-          return db.updateMember(currentMember.id, patch, options);
-        }
-      }
-      console.error("Failed to update member", error);
-      if (options.throwOnError) throw error;
-      return window.__app.state.members.find((x) => x.id === id) || null;
-    }
-    const m = window.__app.state.members.find((x) => x.id === id);
-    if (m) {
-      Object.assign(m, saved || patch);
-      m.profileComplete = hasCompleteProfile(m);
-    }
-    window.__app.notify();
-    return m;
-  },
-  async addMember(profile) {
-    const id = "m_" + Math.random().toString(36).slice(2, 9);
-    const member = {
-      id,
-      isMe: false,
-      shareDetails: false,
-      milestoneAlerts: true,
-      reminderTime: "08:00",
-      resetGracePeriodDays: 1,
-      colorIdx: window.__app.state.members.length % 6,
-      tone: "sam",
-      theme: "system",
-      ...profile,
-    };
-    member.profileComplete = hasCompleteProfile(member);
-    const savedMember = await api.request("/api/members", { method: "POST", body: member });
-    window.__app.state.members.push(savedMember || member);
-    window.__app.notify();
-    return savedMember || member;
-  },
-  async removeMember(id) {
-    window.__app.state.members = window.__app.state.members.filter((m) => m.id !== id);
-    window.__app.state.entries = window.__app.state.entries.filter((e) => e.memberId !== id);
-    window.__app.notify();
-    api.request("/api/members", { method: "DELETE", body: { id } }).catch((error) => console.error("Failed to remove member", error));
-  },
-};
-
-// Goal pacing — expected vs actual progress.
-function calcPacing(member, entries) {
-  if (!entries.length) return null;
-  const sorted = [...entries].sort((a, b) => +new Date(a.date) - +new Date(b.date));
-  const startDate = new Date(sorted[0].date);
-  const targetDate = new Date(member.targetDate);
-  const today = window.__fixtures.today;
-  const totalMs = +targetDate - +startDate;
-  if (totalMs <= 0) return null;
-  const elapsedFrac = Math.max(0, Math.min(1, (+today - +startDate) / totalMs));
-  const expectedKg = member.startWeightKg + (member.goalWeightKg - member.startWeightKg) * elapsedFrac;
-  const actualKg = sorted[sorted.length - 1].weightKg;
-  // Days ahead/behind: how far does actual lie along the line vs today's mark
-  const losing = member.startWeightKg > member.goalWeightKg;
-  const totalDelta = member.goalWeightKg - member.startWeightKg;
-  const actualFrac = totalDelta === 0 ? 0 : (actualKg - member.startWeightKg) / totalDelta;
-  const aheadDays = Math.round((actualFrac - elapsedFrac) * (totalMs / 86400000));
-  // Projected goal date at current pace
-  const daysSoFar = (+today - +startDate) / 86400000;
-  const ratePerDay = daysSoFar > 0 ? (actualKg - member.startWeightKg) / daysSoFar : 0;
-  let projectedDate = null;
-  if (ratePerDay !== 0 && Math.sign(ratePerDay) === Math.sign(totalDelta)) {
-    const remainingDays = (member.goalWeightKg - actualKg) / ratePerDay;
-    if (isFinite(remainingDays) && remainingDays > 0 && remainingDays < 365 * 3) {
-      projectedDate = new Date(+today + remainingDays * 86400000);
-    }
-  }
-  return {
-    startDate, targetDate, expectedKg, actualKg,
-    aheadDays, projectedDate, losing,
-    onTrack: Math.abs(aheadDays) <= 3,
-  };
-}
-
-Object.assign(window, {
-  KG_TO_LB, CM_TO_IN, kgToLb, lbToKg, cmToIn, kgToSt, stLbToKg, kgToStLb, unitSuffix,
-  fmtWeight, fmtHeight, fmtDelta, fmtDate, fmtDateLong,
-  calcBMI, bmiCategory, calcBMR, calcTDEE, estBodyFat, calcIdealWeight,
-  calcStreak, trendDirection, progressFraction, calcPacing,
-  db,
-});
-
 
 // ---- ui.jsx ----
 // ui.jsx — small reusable presentation components.
@@ -3570,27 +3245,6 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "showFirstRun": false,
   "demoMilestone": false
 }/*EDITMODE-END*/;
-
-// Centralized app store
-const __store = {
-  state: {
-    members: [],
-    entries: [],
-  },
-  listeners: new Set(),
-  notify() { this.listeners.forEach((fn) => fn()); },
-};
-window.__app = __store;
-
-function useStore() {
-  const [, force] = useState(0);
-  useEffect(() => {
-    const fn = () => force((n) => n + 1);
-    __store.listeners.add(fn);
-    return () => __store.listeners.delete(fn);
-  }, []);
-  return __store.state;
-}
 
 const NAV_TABS = [
   { id: "dashboard", label: "Dashboard", mobileLabel: "Today", icon: IconHome },
