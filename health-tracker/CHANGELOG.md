@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.1
+
+*   Swapped the BMI, BMR, TDEE, and ideal-weight calculations over to the
+    `@finegym/fitness-calc` library so the formulas are maintained upstream
+    and easier to extend toward macros and other metrics later.
+*   Refined the BMI category label to use the WHO classification —
+    `Severely`, `Moderately`, and `Mildly` underweight, plus `Obese class I`,
+    `II`, and `III` — instead of a flat four-bucket grouping.
+
 ## 0.4.0
 
 *   Migrated the add-on internals to end-to-end TypeScript with strict type
