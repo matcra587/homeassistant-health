@@ -1,6 +1,7 @@
 import React from "react";
 import "./styles.css";
 import logoUrl from "../../logo.png";
+import { apiUrl } from "./api-url";
 
 // ---- fixtures.js ----
 // Seeded fixtures for HomeAssistant Health.
@@ -909,7 +910,7 @@ function progressFraction(member, latestKg) {
 // ---- API-backed data layer ----------------------------------------------
 const api = {
   async request(path, options = {}) {
-    const response = await fetch(path, {
+    const response = await fetch(apiUrl(path), {
       ...options,
       headers: {
         "content-type": "application/json",

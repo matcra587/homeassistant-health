@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2
+
+*   Fixed API requests when the app runs under Home Assistant ingress.
+
 ## 0.2.1
 
 *   Require profile setup before the dashboard accepts weight entries.
