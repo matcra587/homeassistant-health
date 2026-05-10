@@ -1,0 +1,121 @@
+---
+name: build app
+
+on:
+  workflow_call:
+    inputs:
+      app:
+        required: true
+        type: string
+      publish:
+        required: true
+        type: boolean
+
+permissions: {}
+
+jobs:
+  prepare:
+    name: Prepare
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      architectures: ${{ steps.info.outputs.architectures }}
+      build-matrix: ${{ steps.matrix.outputs.matrix }}
+      description: ${{ steps.info.outputs.description }}
+      image-name: ${{ steps.normalize.outputs.image-name }}
+      name: ${{ steps.info.outputs.name }}
+      registry-prefix: ${{ steps.normalize.outputs.registry-prefix }}
+      url: ${{ steps.info.outputs.url }}
+      version: ${{ steps.info.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Get app information
+        id: info
+        uses: home-assistant/actions/helpers/info@f6f29a7ee3fa0eccadf3620a7b9ee00ab54ec03b
+        with:
+          path: ./${{ inputs.app }}
+
+      - name: Normalize image information
+        id: normalize
+        env:
+          IMAGE: ${{ steps.info.outputs.image }}
+        run: |
+          if [[ -z "${IMAGE}" || "${IMAGE}" == "null" ]]; then
+            echo "::error::config.yaml must set image before app images can be built"
+            exit 1
+          fi
+
+          echo "image-name=${IMAGE##*/}" >> "${GITHUB_OUTPUT}"
+          echo "registry-prefix=${IMAGE%/*}" >> "${GITHUB_OUTPUT}"
+        shell: bash
+
+      - name: Prepare build matrix
+        id: matrix
+        uses: home-assistant/builder/actions/prepare-multi-arch-matrix@62a1597b84b3461abad9816d9cd92862a2b542c3 # 2026.03.2
+        with:
+          architectures: ${{ steps.info.outputs.architectures }}
+          image-name: ${{ steps.normalize.outputs.image-name }}
+          registry-prefix: ${{ steps.normalize.outputs.registry-prefix }}
+
+  build:
+    name: Build ${{ matrix.arch }} image
+    needs: prepare
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      id-token: write # Required for keyless Cosign signing when publishing.
+      packages: write # Required to publish built images to GHCR.
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare.outputs.build-matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Build image
+        uses: home-assistant/builder/actions/build-image@62a1597b84b3461abad9816d9cd92862a2b542c3 # 2026.03.2
+        with:
+          arch: ${{ matrix.arch }}
+          container-registry-password: ${{ github.token }}
+          context: ./${{ inputs.app }}
+          cosign: ${{ inputs.publish }}
+          image: ${{ matrix.image }}
+          image-tags: |
+            ${{ needs.prepare.outputs.version }}
+            latest
+          labels: |
+            io.hass.type=app
+            io.hass.name=${{ needs.prepare.outputs.name }}
+            io.hass.description=${{ needs.prepare.outputs.description }}
+            ${{ needs.prepare.outputs.url && format('io.hass.url={0}', needs.prepare.outputs.url) || '' }}
+          push: ${{ inputs.publish }}
+          version: ${{ needs.prepare.outputs.version }}
+
+  manifest:
+    name: Publish multi-arch manifest
+    needs: [prepare, build]
+    if: inputs.publish
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Required for keyless Cosign signing when publishing.
+      packages: write # Required to publish the multi-arch manifest to GHCR.
+    steps:
+      - name: Publish multi-arch manifest
+        uses: home-assistant/builder/actions/publish-multi-arch-manifest@62a1597b84b3461abad9816d9cd92862a2b542c3 # 2026.03.2
+        with:
+          architectures: ${{ needs.prepare.outputs.architectures }}
+          container-registry-password: ${{ github.token }}
+          image-name: ${{ needs.prepare.outputs.image-name }}
+          image-tags: |
+            ${{ needs.prepare.outputs.version }}
+            latest
+          registry-prefix: ${{ needs.prepare.outputs.registry-prefix }}

@@ -1,0 +1,42 @@
+---
+name: builder
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/build-app.yaml"
+      - ".github/workflows/builder.yaml"
+      - "health-tracker/**"
+      - "repository.yaml"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-app.yaml"
+      - ".github/workflows/builder.yaml"
+      - "health-tracker/**"
+      - "repository.yaml"
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the built image to GHCR
+        required: true
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  build:
+    name: Build health-tracker
+    permissions:
+      contents: read
+      id-token: write # Required for keyless Cosign signing when publishing.
+      packages: write # Required to publish built images to GHCR.
+    uses: ./.github/workflows/build-app.yaml
+    with:
+      app: health-tracker
+      publish: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish) }}
