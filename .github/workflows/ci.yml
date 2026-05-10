@@ -72,6 +72,23 @@ jobs:
     permissions:
       contents: read
 
+  ha-lint:
+    name: Home Assistant app lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Run Home Assistant app lint
+        uses: frenck/action-addon-linter@f995494fd84fae6310d23617e66d0e37de4f14eb # v2.21
+        with:
+          path: ./health-tracker
+
   docker-test:
     name: Docker test
     needs: docker-lint

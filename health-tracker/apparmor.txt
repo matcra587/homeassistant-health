@@ -1,0 +1,34 @@
+#include <tunables/global>
+
+profile homeassistant_health flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+
+  file,
+  network inet stream,
+  network inet6 stream,
+  signal (send) set=(kill,term,int,hup,cont),
+
+  # S6 overlay
+  /init ix,
+  /bin/** ix,
+  /usr/bin/** ix,
+  /run/{s6,s6-rc*,service}/** ix,
+  /package/** ix,
+  /command/** ix,
+  /etc/services.d/** rwix,
+  /etc/cont-init.d/** rwix,
+  /etc/cont-finish.d/** rwix,
+  /run/{,**} rwk,
+  /dev/tty rw,
+
+  # Bashio
+  /usr/lib/bashio/** ix,
+
+  # App runtime
+  /run.sh rix,
+  /usr/local/bin/bun rix,
+  /app/dist/** r,
+  /tmp/** rwk,
+  /data/** rw,
+  /config/** rw,
+}

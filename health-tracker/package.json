@@ -1,0 +1,29 @@
+{
+  "name": "homeassistant-health-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun run clean && bun build --target=bun --production --sourcemap=none --outdir=dist ./src/server/index.ts",
+    "build:analyze": "bun run clean && bun build --target=bun --production --sourcemap=none --metafile=dist/metafile.json --outdir=dist ./src/server/index.ts",
+    "check": "bun run typecheck && bun run lint && bun run test && bun run build",
+    "clean": "rm -rf dist",
+    "dev": "bun --watch src/server/index.ts",
+    "format": "biome format --write src tests package.json tsconfig.json",
+    "lint": "biome check src tests package.json tsconfig.json",
+    "lint:fix": "biome check --write src tests package.json tsconfig.json",
+    "start": "cd dist && NODE_ENV=production bun index.js",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.15",
+    "@types/bun": "^1.3.13",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^6.0.3"
+  }
+}
