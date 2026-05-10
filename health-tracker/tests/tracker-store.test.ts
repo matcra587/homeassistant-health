@@ -29,6 +29,7 @@ function member(overrides: Partial<Member> = {}): Member {
     goalWeightKg: 68,
     targetDate: "2026-10-01T07:30:00.000Z",
     units: "metric",
+    theme: "system",
     shareDetails: false,
     reminderTime: "08:00",
     milestoneAlerts: true,
@@ -79,6 +80,7 @@ test("bootstraps a Home Assistant user without demo household seed data", () => 
   expect(payload.members[0]?.profileComplete).toBe(false);
   expect(payload.members[0]?.heightCm).toBeNull();
   expect(payload.members[0]?.startWeightKg).toBeNull();
+  expect(payload.members[0]?.theme).toBe("system");
 });
 
 test("uses a single development user when ingress headers are missing outside production", () => {
@@ -111,6 +113,17 @@ test("marks a profile complete after required fields are saved", () => {
   expect(completed?.profileComplete).toBe(true);
   expect(completed?.heightCm).toBe(172);
   expect(completed?.startWeightKg).toBe(74);
+});
+
+test("persists a profile theme preference", () => {
+  const headers = haHeaders("ha-theme", "Theme User");
+
+  store.bootstrap(headers);
+  store.updateMember(headers, "ha-theme", { theme: "dark" });
+
+  const payload = store.bootstrap(headers);
+  const updated = payload.members.find((item) => item.id === "ha-theme");
+  expect(updated?.theme).toBe("dark");
 });
 
 test("rejects entries until the member profile is complete", async () => {

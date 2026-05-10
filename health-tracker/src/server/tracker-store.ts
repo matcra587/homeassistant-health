@@ -4,6 +4,7 @@ import { dirname } from "node:path";
 
 type Sex = "M" | "F";
 type Units = "metric" | "imperial" | "uk";
+type Theme = "system" | "light" | "dark";
 
 export type Member = {
   id: string;
@@ -17,6 +18,7 @@ export type Member = {
   goalWeightKg: number | null;
   targetDate: string | null;
   units: Units | null;
+  theme: Theme;
   shareDetails: boolean;
   reminderTime: string;
   milestoneAlerts: boolean;
@@ -159,6 +161,7 @@ function initSchema(database: Database): void {
       goal_weight_kg           REAL,
       target_date              TEXT,
       units                    TEXT CHECK (units IN ('metric', 'imperial', 'uk') OR units IS NULL),
+      theme                    TEXT NOT NULL DEFAULT 'system' CHECK (theme IN ('system', 'light', 'dark')),
       share_details            INTEGER NOT NULL,
       reminder_time            TEXT NOT NULL,
       milestone_alerts         INTEGER NOT NULL,
@@ -198,6 +201,11 @@ function migrateSchema(database: Database): void {
       "ALTER TABLE members ADD COLUMN profile_complete INTEGER NOT NULL DEFAULT 0",
     );
   }
+  if (!columns.some((column) => column.name === "theme")) {
+    database.exec(
+      "ALTER TABLE members ADD COLUMN theme TEXT NOT NULL DEFAULT 'system' CHECK (theme IN ('system', 'light', 'dark'))",
+    );
+  }
 
   if (
     [
@@ -230,6 +238,7 @@ function rebuildMembersTable(
   const profileComplete = oldColumns.has("profile_complete")
     ? "profile_complete"
     : "0";
+  const theme = oldColumns.has("theme") ? "theme" : "'system'";
 
   database.exec("PRAGMA foreign_keys = OFF");
   try {
@@ -249,6 +258,7 @@ function rebuildMembersTable(
         goal_weight_kg           REAL,
         target_date              TEXT,
         units                    TEXT CHECK (units IN ('metric', 'imperial', 'uk') OR units IS NULL),
+        theme                    TEXT NOT NULL DEFAULT 'system' CHECK (theme IN ('system', 'light', 'dark')),
         share_details            INTEGER NOT NULL,
         reminder_time            TEXT NOT NULL,
         milestone_alerts         INTEGER NOT NULL,
@@ -262,13 +272,13 @@ function rebuildMembersTable(
       INSERT INTO members_new (
         id, owner_id, display_name, initials, height_cm, age, sex,
         activity_level, start_weight_kg, goal_weight_kg, target_date,
-        units, share_details, reminder_time, milestone_alerts,
+        units, theme, share_details, reminder_time, milestone_alerts,
         reset_grace_period_days, tone, profile_complete, created_at, updated_at
       )
       SELECT
         id, ${ownerId}, display_name, initials, height_cm, age, sex,
         activity_level, start_weight_kg, goal_weight_kg, target_date,
-        units, share_details, reminder_time, milestone_alerts,
+        units, ${theme}, share_details, reminder_time, milestone_alerts,
         reset_grace_period_days, tone, ${profileComplete}, created_at, updated_at
       FROM members;
 
@@ -365,6 +375,7 @@ function seededMembers(currentUser: CurrentUser): Member[] {
       goalWeightKg: 66,
       targetDate: daysAgo(-60).toISOString(),
       units: "metric",
+      theme: "system",
       shareDetails: true,
       reminderTime: "07:30",
       milestoneAlerts: true,
@@ -384,6 +395,7 @@ function seededMembers(currentUser: CurrentUser): Member[] {
       goalWeightKg: 84,
       targetDate: daysAgo(-90).toISOString(),
       units: "metric",
+      theme: "system",
       shareDetails: false,
       reminderTime: "06:45",
       milestoneAlerts: true,
@@ -403,6 +415,7 @@ function seededMembers(currentUser: CurrentUser): Member[] {
       goalWeightKg: 65,
       targetDate: daysAgo(-120).toISOString(),
       units: "metric",
+      theme: "system",
       shareDetails: true,
       reminderTime: "08:00",
       milestoneAlerts: false,
@@ -422,6 +435,7 @@ function seededMembers(currentUser: CurrentUser): Member[] {
       goalWeightKg: 70,
       targetDate: daysAgo(-180).toISOString(),
       units: "metric",
+      theme: "system",
       shareDetails: false,
       reminderTime: "07:00",
       milestoneAlerts: true,
@@ -538,10 +552,10 @@ function ensureSeeded(database: Database, currentUser: CurrentUser): void {
   const insertMember = database.prepare(`
     INSERT INTO members (
       id, owner_id, display_name, initials, height_cm, age, sex, activity_level,
-      start_weight_kg, goal_weight_kg, target_date, units, share_details,
+      start_weight_kg, goal_weight_kg, target_date, units, theme, share_details,
       reminder_time, milestone_alerts, reset_grace_period_days, tone,
       profile_complete
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   for (const member of seededMembers(currentUser)) {
@@ -558,6 +572,7 @@ function ensureSeeded(database: Database, currentUser: CurrentUser): void {
       member.goalWeightKg,
       member.targetDate,
       member.units,
+      member.theme,
       member.shareDetails ? 1 : 0,
       member.reminderTime,
       member.milestoneAlerts ? 1 : 0,
@@ -614,10 +629,10 @@ function ensureCurrentMember(
   database
     .prepare(`
       INSERT INTO members (
-        id, owner_id, display_name, initials, units, share_details,
+        id, owner_id, display_name, initials, units, theme, share_details,
         reminder_time, milestone_alerts, reset_grace_period_days, tone,
         profile_complete
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     .run(
       currentUser.id,
@@ -625,6 +640,7 @@ function ensureCurrentMember(
       currentUser.displayName,
       initials(currentUser.displayName) || "ME",
       null,
+      "system",
       0,
       "08:00",
       1,
@@ -650,6 +666,7 @@ function toMember(row: Record<string, unknown>, currentUserId: string): Member {
       row.goal_weight_kg == null ? null : Number(row.goal_weight_kg),
     targetDate: row.target_date == null ? null : String(row.target_date),
     units: row.units == null ? null : (row.units as Units),
+    theme: row.theme === "light" || row.theme === "dark" ? row.theme : "system",
     shareDetails: bool(row.share_details),
     reminderTime: String(row.reminder_time),
     milestoneAlerts: bool(row.milestone_alerts),
@@ -825,6 +842,16 @@ function validateProfilePatch(patch: Partial<Member>): void {
   ) {
     throw new Response("Target date must be a valid date", { status: 422 });
   }
+  if (
+    patch.theme !== undefined &&
+    patch.theme !== "system" &&
+    patch.theme !== "light" &&
+    patch.theme !== "dark"
+  ) {
+    throw new Response("Theme must be system, light, or dark", {
+      status: 422,
+    });
+  }
 }
 
 function requireCompleteProfile(member: MemberAccess): void {
@@ -994,6 +1021,7 @@ export function saveMember(headers: Headers, member: Member): Member {
   const goalWeightKg = member.goalWeightKg;
   const targetDate = member.targetDate;
   const units = member.units;
+  const theme = member.theme ?? "system";
   if (
     !Number.isFinite(heightCm) ||
     heightCm === null ||
@@ -1058,10 +1086,10 @@ export function saveMember(headers: Headers, member: Member): Member {
     .prepare(`
       INSERT INTO members (
         id, owner_id, display_name, initials, height_cm, age, sex, activity_level,
-        start_weight_kg, goal_weight_kg, target_date, units, share_details,
+        start_weight_kg, goal_weight_kg, target_date, units, theme, share_details,
         reminder_time, milestone_alerts, reset_grace_period_days, tone,
         profile_complete
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         owner_id = COALESCE(members.owner_id, excluded.owner_id),
         display_name = excluded.display_name,
@@ -1074,6 +1102,7 @@ export function saveMember(headers: Headers, member: Member): Member {
         goal_weight_kg = excluded.goal_weight_kg,
         target_date = excluded.target_date,
         units = excluded.units,
+        theme = excluded.theme,
         share_details = excluded.share_details,
         reminder_time = excluded.reminder_time,
         milestone_alerts = excluded.milestone_alerts,
@@ -1095,6 +1124,7 @@ export function saveMember(headers: Headers, member: Member): Member {
       goalWeightKg,
       targetDate,
       units,
+      theme,
       member.shareDetails ? 1 : 0,
       member.reminderTime,
       member.milestoneAlerts ? 1 : 0,
@@ -1103,7 +1133,7 @@ export function saveMember(headers: Headers, member: Member): Member {
       1,
     );
 
-  return { ...member, profileComplete: true };
+  return { ...member, theme, profileComplete: true };
 }
 
 export function updateMember(
@@ -1124,6 +1154,7 @@ export function updateMember(
     ["goalWeightKg", "goal_weight_kg"],
     ["targetDate", "target_date"],
     ["units", "units"],
+    ["theme", "theme"],
     ["shareDetails", "share_details"],
     ["reminderTime", "reminder_time"],
     ["milestoneAlerts", "milestone_alerts"],

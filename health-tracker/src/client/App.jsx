@@ -1,6 +1,6 @@
 import React from "react";
 import "./styles.css";
-import logoUrl from "../../logo.png";
+import iconUrl from "../../icon.png";
 import { apiUrl } from "./api-url";
 
 // ---- fixtures.js ----
@@ -75,6 +75,7 @@ import { apiUrl } from "./api-url";
       goalWeightKg: 66.0,
       targetDate: daysAgo(-60).toISOString(),
       units: "metric",
+      theme: "system",
       shareDetails: true,
       reminderTime: "07:30",
       milestoneAlerts: true,
@@ -95,6 +96,7 @@ import { apiUrl } from "./api-url";
       goalWeightKg: 84.0,
       targetDate: daysAgo(-90).toISOString(),
       units: "metric",
+      theme: "system",
       shareDetails: false,
       reminderTime: "06:45",
       milestoneAlerts: true,
@@ -115,6 +117,7 @@ import { apiUrl } from "./api-url";
       goalWeightKg: 65.0,
       targetDate: daysAgo(-120).toISOString(),
       units: "metric",
+      theme: "system",
       shareDetails: true,
       reminderTime: "08:00",
       milestoneAlerts: false,
@@ -135,6 +138,7 @@ import { apiUrl } from "./api-url";
       goalWeightKg: 70.0, // gaining
       targetDate: daysAgo(-180).toISOString(),
       units: "metric",
+      theme: "system",
       shareDetails: false,
       reminderTime: "07:00",
       milestoneAlerts: true,
@@ -980,9 +984,24 @@ const db = {
   },
   async updateMember(id, patch, options = {}) {
     let saved;
+    const localMember = window.__app.state.members.find((x) => x.id === id) || null;
+    if (localMember?.isMe && /^m\d+$/.test(id)) {
+      await db.bootstrap();
+      const currentMember = window.__app.state.members.find((x) => x.isMe) || null;
+      if (currentMember?.id && currentMember.id !== id) {
+        return db.updateMember(currentMember.id, patch, options);
+      }
+    }
     try {
       saved = await api.request("/api/members", { method: "PATCH", body: { id, patch } });
     } catch (error) {
+      if (error instanceof Error && error.message === "Member not found" && localMember?.isMe) {
+        await db.bootstrap();
+        const currentMember = window.__app.state.members.find((x) => x.isMe) || null;
+        if (currentMember?.id && currentMember.id !== id) {
+          return db.updateMember(currentMember.id, patch, options);
+        }
+      }
       console.error("Failed to update member", error);
       if (options.throwOnError) throw error;
       return window.__app.state.members.find((x) => x.id === id) || null;
@@ -1006,6 +1025,7 @@ const db = {
       resetGracePeriodDays: 1,
       colorIdx: window.__app.state.members.length % 6,
       tone: "sam",
+      theme: "system",
       ...profile,
     };
     member.profileComplete = hasCompleteProfile(member);
@@ -1194,16 +1214,389 @@ function TextInput({ value, onChange, type = "text", ...rest }) {
 }
 
 function Select({ value, onChange, options }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+  const selected = options.find((option) => String(option.value) === String(value)) ?? options[0];
+
+  useEffect(() => {
+    if (!open) return;
+    function handlePointerDown(event) {
+      if (!rootRef.current?.contains(event.target)) setOpen(false);
+    }
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  function choose(option) {
+    onChange?.(option.value);
+    setOpen(false);
+  }
+
   return (
-    <select
-      value={value}
-      onChange={(e) => onChange?.(e.target.value)}
-      style={{ ...inputStyle, appearance: "none", backgroundImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path d='M5 8l5 5 5-5' stroke='%23686460' stroke-width='1.4' fill='none' stroke-linecap='round'/></svg>\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center", paddingRight: 32 }}
-    >
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>{o.label}</option>
-      ))}
-    </select>
+    <div className="select-root" ref={rootRef}>
+      <button
+        type="button"
+        className="select-control"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            setOpen(true);
+          }
+        }}
+      >
+        <span className={selected?.value === "" ? "select-placeholder" : undefined}>{selected?.label ?? ""}</span>
+        <span className="material-symbols-outlined" aria-hidden>expand_more</span>
+      </button>
+      {open && (
+        <div className="select-menu" role="listbox">
+          {options.map((option) => {
+            const selectedOption = String(option.value) === String(value);
+            return (
+              <button
+                key={option.value}
+                type="button"
+                className="select-option"
+                role="option"
+                aria-selected={selectedOption}
+                data-selected={selectedOption}
+                onClick={() => choose(option)}
+              >
+                <span>{option.label}</span>
+                {selectedOption && <Icon.Check />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function parseDateInput(value) {
+  if (!value) return null;
+  const [year, month, day] = String(value).slice(0, 10).split("-").map(Number);
+  if (!year || !month || !day) return null;
+  const date = new Date(year, month - 1, day);
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+}
+
+function formatDateInput(date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+function dateInputToIso(value) {
+  const date = parseDateInput(value);
+  if (!date) return value;
+  date.setHours(8, 0, 0, 0);
+  return date.toISOString();
+}
+
+function displayDateInput(value) {
+  const date = parseDateInput(value);
+  if (!date) return "Select date";
+  return date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
+}
+
+function monthLabel(date) {
+  return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+function monthStart(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function buildMonthCells(month) {
+  const first = monthStart(month);
+  const daysInMonth = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+  const cells = Array.from({ length: first.getDay() }, () => null);
+  for (let day = 1; day <= daysInMonth; day++) {
+    cells.push(new Date(first.getFullYear(), first.getMonth(), day));
+  }
+  while (cells.length % 7 !== 0) cells.push(null);
+  return cells;
+}
+
+function monthDistance(from, to) {
+  return (from.getFullYear() - to.getFullYear()) * 12 + from.getMonth() - to.getMonth();
+}
+
+function DateMonth({ month, selectedDate, onChoose }) {
+  const days = useMemo(() => buildMonthCells(month), [month]);
+
+  return (
+    <section className="date-month">
+      <div className="date-month-title">{monthLabel(month)}</div>
+      <div className="date-weekdays" aria-hidden>
+        {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
+          <span key={`${day}-${index}`}>{day}</span>
+        ))}
+      </div>
+      <div className="date-grid">
+        {days.map((date, index) => {
+          const selected = date && selectedDate && formatDateInput(date) === formatDateInput(selectedDate);
+          return date ? (
+            <button
+              key={formatDateInput(date)}
+              type="button"
+              className="date-day"
+              data-selected={selected}
+              aria-pressed={selected}
+              onClick={() => onChoose(date)}
+            >
+              {date.getDate()}
+            </button>
+          ) : (
+            <span key={`blank-${index}`} className="date-day-empty" />
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function DateInput({ value, onChange, history = false }) {
+  const selectedDate = parseDateInput(value);
+  const [open, setOpen] = useState(false);
+  const [visibleMonth, setVisibleMonth] = useState(() => {
+    const date = selectedDate ?? new Date();
+    return monthStart(date);
+  });
+  const [historyMonthCount, setHistoryMonthCount] = useState(12);
+  const rootRef = useRef(null);
+
+  useEffect(() => {
+    if (selectedDate) {
+      setVisibleMonth(monthStart(selectedDate));
+    }
+  }, [value]);
+
+  useEffect(() => {
+    if (!history || !selectedDate) return;
+    const currentMonth = monthStart(new Date());
+    const selectedMonth = monthStart(selectedDate);
+    const distance = monthDistance(currentMonth, selectedMonth);
+    if (distance >= historyMonthCount) {
+      setHistoryMonthCount(Math.max(12, distance + 1));
+    }
+  }, [history, historyMonthCount, selectedDate]);
+
+  useEffect(() => {
+    if (!open) return;
+    function handlePointerDown(event) {
+      if (!rootRef.current?.contains(event.target)) setOpen(false);
+    }
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  const historyMonths = useMemo(() => {
+    const currentMonth = monthStart(new Date());
+    return Array.from(
+      { length: historyMonthCount },
+      (_, index) => new Date(currentMonth.getFullYear(), currentMonth.getMonth() - index, 1)
+    );
+  }, [historyMonthCount]);
+
+  function changeMonth(delta) {
+    setVisibleMonth((current) => new Date(current.getFullYear(), current.getMonth() + delta, 1));
+  }
+
+  function choose(date) {
+    onChange?.(formatDateInput(date));
+    setOpen(false);
+  }
+
+  return (
+    <div className="date-root" ref={rootRef}>
+      <button
+        type="button"
+        className="date-control"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span>{displayDateInput(value)}</span>
+        <span className="material-symbols-outlined" aria-hidden>calendar_today</span>
+      </button>
+      {open && (
+        <div className={`date-menu${history ? " date-scroll-menu" : ""}`} role="dialog" aria-label="Choose date">
+          {history ? (
+            <>
+              <div className="date-scroll-body">
+                {historyMonths.map((month) => (
+                  <DateMonth key={formatDateInput(month)} month={month} selectedDate={selectedDate} onChoose={choose} />
+                ))}
+              </div>
+              <button
+                type="button"
+                className="date-load-older"
+                onClick={() => setHistoryMonthCount((count) => count + 12)}
+              >
+                Show older months
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="date-menu-header">
+                <button type="button" className="date-nav-button" aria-label="Previous month" onClick={() => changeMonth(-1)}>
+                  <span className="material-symbols-outlined" aria-hidden>chevron_left</span>
+                </button>
+                <div className="date-menu-title">{monthLabel(visibleMonth)}</div>
+                <button type="button" className="date-nav-button" aria-label="Next month" onClick={() => changeMonth(1)}>
+                  <span className="material-symbols-outlined" aria-hidden>chevron_right</span>
+                </button>
+              </div>
+              <DateMonth month={visibleMonth} selectedDate={selectedDate} onChoose={choose} />
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function parseTimeInput(value) {
+  const match = String(value ?? "").match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return { hour: 8, minute: 0 };
+  const hour = Math.min(23, Math.max(0, Number(match[1])));
+  const minute = Math.min(59, Math.max(0, Number(match[2])));
+  return { hour, minute };
+}
+
+function formatTimeInput(hour, minute) {
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
+function displayTimeInput(value) {
+  const { hour, minute } = parseTimeInput(value);
+  const period = hour >= 12 ? "PM" : "AM";
+  const hour12 = hour % 12 || 12;
+  return `${String(hour12).padStart(2, "0")}:${String(minute).padStart(2, "0")} ${period}`;
+}
+
+function TimeInput({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+  const { hour, minute } = parseTimeInput(value);
+  const period = hour >= 12 ? "PM" : "AM";
+  const hour12 = hour % 12 || 12;
+  const minuteStep = Math.round(minute / 5) * 5;
+  const displayedMinute = minuteStep === 60 ? 55 : minuteStep;
+  const hours = Array.from({ length: 12 }, (_, index) => index + 1);
+  const minutes = Array.from({ length: 12 }, (_, index) => index * 5);
+
+  useEffect(() => {
+    if (!open) return;
+    function handlePointerDown(event) {
+      if (!rootRef.current?.contains(event.target)) setOpen(false);
+    }
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  function commit(nextHour12, nextMinute, nextPeriod) {
+    let nextHour = nextHour12 % 12;
+    if (nextPeriod === "PM") nextHour += 12;
+    onChange?.(formatTimeInput(nextHour, nextMinute));
+  }
+
+  return (
+    <div className="time-root" ref={rootRef}>
+      <button
+        type="button"
+        className="time-control"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span>{displayTimeInput(value)}</span>
+        <span className="material-symbols-outlined" aria-hidden>schedule</span>
+      </button>
+      {open && (
+        <div className="time-menu" role="dialog" aria-label="Choose time">
+          <div className="time-preview">{displayTimeInput(value)}</div>
+          <div className="time-picker-grid">
+            <div>
+              <div className="time-picker-label">Hour</div>
+              <div className="time-option-grid">
+                {hours.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    className="time-option"
+                    data-selected={option === hour12}
+                    onClick={() => commit(option, minute, period)}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className="time-picker-label">Minute</div>
+              <div className="time-option-grid">
+                {minutes.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    className="time-option"
+                    data-selected={option === displayedMinute}
+                    onClick={() => commit(hour12, option, period)}
+                  >
+                    {String(option).padStart(2, "0")}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="time-period-row">
+            {["AM", "PM"].map((option) => (
+              <button
+                key={option}
+                type="button"
+                className="time-period-button"
+                data-selected={option === period}
+                onClick={() => commit(hour12, minute, option)}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+          <div className="time-actions">
+            <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>Done</button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1216,7 +1609,6 @@ function Switch({ checked, onChange, label }) {
       onClick={() => onChange?.(!checked)}
       className="switch focus-ring"
       data-on={checked}
-      style={{ border: 0 }}
     />
   );
 }
@@ -1239,6 +1631,7 @@ function ProgressBar({ fraction, color }) {
 }
 
 function Logo({ size = 22, width }) {
+  const resolvedWidth = width ?? size;
   return (
     <span
       aria-label="Home Assistant Health"
@@ -1247,16 +1640,16 @@ function Logo({ size = 22, width }) {
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        width: width ?? size * 2.5,
+        width: resolvedWidth,
         height: size,
       }}
     >
-      <img src={logoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+      <img src={iconUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
     </span>
   );
 }
 
-Object.assign(window, { Avatar, Stat, IconBtn, Icon, Field, TextInput, Select, Switch, ProgressBar, Logo, inputStyle });
+Object.assign(window, { Avatar, Stat, IconBtn, Icon, Field, TextInput, Select, DateInput, TimeInput, Switch, ProgressBar, Logo, inputStyle });
 
 
 // ---- chart.jsx ----
@@ -2113,7 +2506,7 @@ function HouseholdScreen({ me, members, entries, units, onTogglePrivacy, onAddMe
 }
 
 // ---------- Profile & Settings ----------
-function ProfileScreen({ me, units, onUpdate, onUnits }) {
+function ProfileScreen({ me, units, theme, onUpdate, onUnits, onTheme }) {
   const [form, setForm] = useState({ ...me });
   const [savedAt, setSavedAt] = useState(null);
 
@@ -2122,6 +2515,16 @@ function ProfileScreen({ me, units, onUpdate, onUnits }) {
     setForm(next);
     onUpdate(patch);
     setSavedAt(Date.now());
+  }
+
+  function updateUnits(value) {
+    onUnits(value);
+    update({ units: value });
+  }
+
+  function updateTheme(value) {
+    onTheme(value);
+    update({ theme: value });
   }
 
   const goalKgInput = units === "imperial" ? kgToLb(form.goalWeightKg) : form.goalWeightKg;
@@ -2184,7 +2587,7 @@ function ProfileScreen({ me, units, onUpdate, onUnits }) {
             />
           </Field>
           <Field label="Target date">
-            <TextInput type="date" value={new Date(form.targetDate).toISOString().slice(0, 10)} onChange={(v) => update({ targetDate: new Date(v).toISOString() })} />
+            <DateInput value={new Date(form.targetDate).toISOString().slice(0, 10)} onChange={(v) => update({ targetDate: dateInputToIso(v) })} />
           </Field>
         </div>
       </Section>
@@ -2192,10 +2595,21 @@ function ProfileScreen({ me, units, onUpdate, onUnits }) {
       <Section title="Preferences">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
           <Field label="Units">
-            <Select value={units} onChange={onUnits} options={[{ value: "metric", label: "Metric (kg, cm)" }, { value: "imperial", label: "Imperial (lb, in)" }]} />
+            <Select value={units} onChange={updateUnits} options={[{ value: "metric", label: "Metric (kg, cm)" }, { value: "imperial", label: "Imperial (lb, in)" }]} />
+          </Field>
+          <Field label="Theme">
+            <Select
+              value={theme}
+              onChange={updateTheme}
+              options={[
+                { value: "system", label: "System" },
+                { value: "light", label: "Light" },
+                { value: "dark", label: "Dark" },
+              ]}
+            />
           </Field>
           <Field label="Daily reminder">
-            <TextInput type="time" value={form.reminderTime} onChange={(v) => update({ reminderTime: v })} />
+            <TimeInput value={form.reminderTime} onChange={(v) => update({ reminderTime: v })} />
           </Field>
           <Field label="Streak grace (days)" hint="Miss this many days and your streak resets.">
             <Select
@@ -2226,13 +2640,6 @@ function ProfileScreen({ me, units, onUpdate, onUnits }) {
         </div>
       </Section>
 
-      <Section title="Household" subtitle="Shared by everyone on this device.">
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <button className="btn">Add a member</button>
-          <button className="btn btn-ghost">Export all data</button>
-          <button className="btn btn-danger">Sign out of this device</button>
-        </div>
-      </Section>
     </div>
   );
 }
@@ -2282,24 +2689,11 @@ function Modal({ children, onClose, maxWidth = 460 }) {
   return (
     <div className="scrim" onClick={onClose}>
       <div
+        className="modal-panel"
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
-        style={{
-          position: "fixed",
-          left: "50%",
-          top: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "min(92vw, " + maxWidth + "px)",
-          background: "var(--card)",
-          borderRadius: 22,
-          border: "1px solid var(--rule-soft)",
-          boxShadow: "var(--shadow-lg)",
-          padding: 28,
-          maxHeight: "90vh",
-          overflow: "auto",
-          animation: "scaleIn 200ms cubic-bezier(.2,1,.4,1) both",
-        }}
+        style={{ "--modal-max-width": `${maxWidth}px` }}
       >
         {children}
       </div>
@@ -2390,14 +2784,14 @@ function LogWeightModal({ me, units, existingEntry, onSave, onClose }) {
         </Field>
 
         <Field label="Date">
-          <TextInput type="date" value={dateStr} onChange={setDateStr} />
+          <DateInput value={dateStr} onChange={setDateStr} history />
         </Field>
 
         <details style={{ borderTop: "1px solid var(--rule-soft)", paddingTop: 14 }}>
           <summary style={{ cursor: "pointer", fontSize: 13, color: "var(--ink-3)", listStyle: "none", display: "flex", alignItems: "center", gap: 6 }}>
             <Icon.Plus /> Optional measurements
           </summary>
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 12, marginTop: 12 }}>
+          <div className="modal-grid" style={{ marginTop: 12 }}>
             <Field label="Body fat (%)">
               <TextInput type="number" step="0.1" value={bodyFat} onChange={setBodyFat} placeholder="—" />
             </Field>
@@ -2412,7 +2806,7 @@ function LogWeightModal({ me, units, existingEntry, onSave, onClose }) {
           </div>
         </details>
 
-        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8 }}>
+        <div className="modal-actions" style={{ marginTop: 8 }}>
           <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
           <button type="submit" className="btn btn-primary">
             <Icon.Check /> {existingEntry?.weightKg != null ? "Save changes" : "Log entry"}
@@ -2473,7 +2867,7 @@ function MilestoneModal({ kind, member, onSetNewGoal, onMaintain, onClose }) {
           {body}
         </p>
         {kind === "goal" ? (
-          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+          <div className="modal-actions modal-actions-center">
             <button className="btn btn-primary" onClick={onSetNewGoal}>Set a new goal</button>
             <button className="btn" onClick={onMaintain}>Switch to maintenance</button>
           </div>
@@ -2557,7 +2951,7 @@ function FirstRun({ profile, onDone }) {
 
         {step === 0 && (
           <div>
-            <Logo size={28} />
+            <Logo size={56} />
             <h1 className="serif" style={{ fontSize: 38, margin: "20px 0 12px 0", fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
               <span className="serif-it">Welcome.</span>
             </h1>
@@ -2576,7 +2970,7 @@ function FirstRun({ profile, onDone }) {
             <p style={{ color: "var(--ink-3)", fontSize: 14, margin: "0 0 22px 0" }}>
               Used only to estimate your derived stats.
             </p>
-            <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 12 }}>
+            <div className="modal-grid">
               <Field label="Display name"><TextInput value={name} onChange={setName} placeholder="Display name" /></Field>
               <Field label="Units">
                 <Select value={units} onChange={setUnits} options={[{ value: "", label: "Select units" }, { value: "metric", label: "Metric" }, { value: "imperial", label: "Imperial" }]} />
@@ -2601,7 +2995,7 @@ function FirstRun({ profile, onDone }) {
                 />
               </Field>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 24 }}>
+            <div className="modal-actions modal-actions-between" style={{ marginTop: 24 }}>
               <button className="btn btn-ghost" onClick={() => setStep(0)}>Back</button>
               <button className="btn btn-primary" disabled={!aboutComplete()} onClick={() => setStep(2)}>Continue</button>
             </div>
@@ -2616,7 +3010,7 @@ function FirstRun({ profile, onDone }) {
             <p style={{ color: "var(--ink-3)", fontSize: 14, margin: "0 0 22px 0" }}>
               These fields are required before the dashboard can calculate progress.
             </p>
-            <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 12 }}>
+            <div className="modal-grid">
               <Field label={usingImperial ? "Today's weight (lb)" : "Today's weight (kg)"}>
                 <TextInput type="number" step="0.1" value={start} onChange={setStart} />
               </Field>
@@ -2624,11 +3018,11 @@ function FirstRun({ profile, onDone }) {
                 <TextInput type="number" step="0.1" value={goal} onChange={setGoal} />
               </Field>
               <Field label="Target date">
-                <TextInput type="date" value={targetDate} onChange={setTargetDate} />
+                <DateInput value={targetDate} onChange={setTargetDate} />
               </Field>
             </div>
             {error && <p style={{ color: "var(--terracotta)", fontSize: 13, margin: "14px 0 0" }}>{error}</p>}
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 24 }}>
+            <div className="modal-actions modal-actions-between" style={{ marginTop: 24 }}>
               <button className="btn btn-ghost" onClick={() => setStep(1)}>Back</button>
               <button className="btn btn-primary" disabled={!startComplete()} onClick={complete}>Begin tracking</button>
             </div>
@@ -2922,7 +3316,7 @@ function AddMemberModal({ onAdd, onClose }) {
               ))}
             </div>
           </Field>
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 12 }}>
+          <div className="modal-grid">
             <Field label="Age">
               <input className="md-input" type="number" value={form.age} onChange={(e) => update({ age: e.target.value })} />
             </Field>
@@ -2951,7 +3345,7 @@ function AddMemberModal({ onAdd, onClose }) {
             />
           </Field>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, gap: 12 }}>
+          <div className="modal-actions modal-actions-between" style={{ marginTop: 8 }}>
             <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
             <button type="button" className="btn btn-primary" onClick={() => { const err = validateBasics(); if (err) { setError(err); return; } setStep(1); }}>
               Continue
@@ -2965,7 +3359,7 @@ function AddMemberModal({ onAdd, onClose }) {
           <p style={{ color: "var(--md-on-surface-variant)", fontSize: 13.5, margin: 0 }}>
             Add a starting point and target so progress cards have real context.
           </p>
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 12 }}>
+          <div className="modal-grid">
             <Field label={units === "imperial" ? "Today's weight (lb)" : "Today's weight (kg)"} error={startWeightError}>
               <input className="md-input" type="number" step="0.1" value={form.startWeightKg} onChange={(e) => update({ startWeightKg: e.target.value })} placeholder="—" />
             </Field>
@@ -2973,7 +3367,7 @@ function AddMemberModal({ onAdd, onClose }) {
               <input className="md-input" type="number" step="0.1" value={form.goalWeightKg} onChange={(e) => update({ goalWeightKg: e.target.value })} placeholder="—" />
             </Field>
             <Field label="Target date" error={targetDateError}>
-              <input className="md-input" type="date" value={form.targetDate} onChange={(e) => update({ targetDate: e.target.value })} />
+              <DateInput value={form.targetDate} onChange={(value) => update({ targetDate: value })} />
             </Field>
           </div>
           {stepOneError && <p style={{ color: "var(--md-error)", fontSize: 13, margin: 0 }}>{stepOneError}</p>}
@@ -2983,7 +3377,7 @@ function AddMemberModal({ onAdd, onClose }) {
             checked={form.shareDetails}
             onChange={(v) => update({ shareDetails: v })}
           />
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+          <div className="modal-actions modal-actions-between" style={{ marginTop: 8 }}>
             <button type="button" className="btn btn-ghost" onClick={() => setStep(0)}>Back</button>
             <button type="button" className="btn btn-primary" onClick={commit}>
               <Icon.Check /> Add to household
@@ -3600,7 +3994,6 @@ Object.assign(window, { HouseholdScreenUnified });
 // app.jsx — root, routing, state, navigation, tweaks.
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-  "theme": "system",
   "showFirstRun": false,
   "demoMilestone": false
 }/*EDITMODE-END*/;
@@ -3608,8 +4001,8 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
 // Centralized app store
 const __store = {
   state: {
-    members: window.__fixtures.members,
-    entries: window.__fixtures.entries,
+    members: [],
+    entries: [],
   },
   listeners: new Set(),
   notify() { this.listeners.forEach((fn) => fn()); },
@@ -3641,8 +4034,8 @@ function NavRail({ tab, onTab, me }) {
       position: "sticky", top: 0, height: "100vh",
       width: 240,
     }}>
-      <div style={{ marginBottom: 24, padding: "0 16px 8px", width: "100%" }}>
-        <Logo size={82} width="100%" />
+      <div style={{ marginBottom: 24, padding: "0 16px 8px", width: "100%", display: "flex", justifyContent: "center" }}>
+        <Logo size={96} />
       </div>
       <nav style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
         {tabs.map((t) => (
@@ -3750,7 +4143,7 @@ function MobileHeader({ me, tab }) {
       zIndex: 30,
       height: 64,
     }}>
-      <Logo size={28} width={70} />
+      <Logo size={40} />
       <Avatar member={me} size={32} />
     </header>
   );
@@ -3763,6 +4156,7 @@ function App() {
   const [logModal, setLogModal] = useState(null);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [milestone, setMilestone] = useState(null);
+  const [theme, setTheme] = useState("system");
   const [tweaks, setTweaks] = useTweaks(TWEAK_DEFAULTS);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
   const [bootstrapped, setBootstrapped] = useState(false);
@@ -3790,16 +4184,20 @@ function App() {
 
   // Apply theme
   useEffect(() => {
-    const t = tweaks.theme;
+    const t = theme;
     if (t === "light" || !t) document.documentElement.removeAttribute("data-theme");
     else document.documentElement.dataset.theme = t;
-  }, [tweaks.theme]);
+  }, [theme]);
 
   const me = state.members.find((m) => m.isMe);
 
   useEffect(() => {
     if (me?.units) setUnits(me.units);
   }, [me?.units]);
+
+  useEffect(() => {
+    if (me?.theme) setTheme(me.theme);
+  }, [me?.theme]);
 
   function handleSaveEntry(entry) {
     db.upsertEntry(entry);
@@ -3825,7 +4223,7 @@ function App() {
   if (!bootstrapped) {
     return (
       <div className="app-shell" style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
-        <Logo size={34} />
+        <Logo size={40} />
       </div>
     );
   }
@@ -3834,7 +4232,7 @@ function App() {
     return (
       <div className="app-shell" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
         <section className="card" style={{ maxWidth: 420, padding: 28, textAlign: "center" }}>
-          <Logo size={34} />
+          <Logo size={40} />
           <h1 className="md-title-l" style={{ margin: "20px 0 8px" }}>Home Assistant sign-in required</h1>
           <p className="md-body-m" style={{ color: "var(--md-on-surface-variant)", margin: 0 }}>
             Open this add-on through Home Assistant ingress to load your health profile.
@@ -3848,7 +4246,7 @@ function App() {
     return (
       <div className="app-shell" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
         <section className="card" style={{ maxWidth: 420, padding: 28, textAlign: "center" }}>
-          <Logo size={34} />
+          <Logo size={40} />
           <h1 className="md-title-l" style={{ margin: "20px 0 8px" }}>Profile unavailable</h1>
           <p className="md-body-m" style={{ color: "var(--md-on-surface-variant)", margin: 0 }}>
             Home Assistant Health could not load your profile.
@@ -3887,7 +4285,7 @@ function App() {
       case "dashboard": return <Dashboard me={me} entries={state.entries} units={units} onLogToday={openToday} onEditEntry={openEdit} />;
       case "entries": return <EntriesScreen me={me} entries={state.entries} units={units} onEdit={openEdit} onBackfill={openBackfill} />;
       case "household": return <HouseholdScreenUnified me={me} members={state.members} entries={state.entries} units={units} onTogglePrivacy={() => db.updateMember(me.id, { shareDetails: !me.shareDetails })} onAddMember={() => setAddMemberOpen(true)} />;
-      case "profile": return <ProfileScreen me={me} units={units} onUpdate={(patch) => db.updateMember(me.id, patch)} onUnits={setUnits} />;
+      case "profile": return <ProfileScreen me={me} units={units} theme={theme} onUpdate={(patch) => db.updateMember(me.id, patch)} onUnits={setUnits} onTheme={setTheme} />;
     }
   })();
 
@@ -3936,18 +4334,6 @@ function App() {
       )}
 
       <TweaksPanel title="Tweaks">
-        <TweakSection label="Theme">
-          <TweakSelect
-            label="Color scheme"
-            value={tweaks.theme}
-            onChange={(v) => setTweaks("theme", v)}
-            options={[
-              { value: "system", label: "System" },
-              { value: "light", label: "Light" },
-              { value: "dark", label: "Dark" },
-            ]}
-          />
-        </TweakSection>
         <TweakSection label="States">
           <TweakButton label="Show first-run setup" onClick={() => setTweaks("showFirstRun", true)} />
           <TweakButton label="Trigger goal celebration" onClick={() => setTweaks("demoMilestone", true)} />

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.3
+
+*   Added profile theme preferences.
+*   Improved mobile dialogs, switches, dropdowns, and date/time controls.
+*   Updated the app icon, logo, and bundled Material Symbols font.
+*   Fixed stale local development profile updates after hot reloads.
+
 ## 0.2.2
 
 *   Fixed API requests when the app runs under Home Assistant ingress.
