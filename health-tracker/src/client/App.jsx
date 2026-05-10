@@ -53,6 +53,9 @@ import { Avatar } from "./components/Avatar";
 import { Logo } from "./components/Logo";
 import { ProgressBar } from "./components/ProgressBar";
 import { Sparkline } from "./components/Sparkline";
+import { MobileTabButton } from "./nav/MobileTabButton";
+import { NavLink } from "./nav/NavLink";
+import { NAV_TABS } from "./nav/nav-tabs";
 import {
   bmiCategory,
   calcBMI,
@@ -3154,75 +3157,6 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "showFirstRun": false,
   "demoMilestone": false
 }/*EDITMODE-END*/;
-
-const NAV_TABS = [
-  { id: "dashboard", label: "Dashboard", mobileLabel: "Today", icon: IconHome },
-  { id: "entries", label: "Entries", mobileLabel: "Entries", icon: IconList },
-  { id: "household", label: "Household", mobileLabel: "Household", icon: IconUsers },
-  { id: "profile", label: "Profile", mobileLabel: "Profile", icon: IconUser },
-];
-
-function NavLink({ active, label, icon: Icon, onClick }) {
-  return (
-    <UnstyledButton
-      onClick={onClick}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        padding: "0 16px",
-        height: 48,
-        borderRadius: 8,
-        background: active ? "var(--mantine-color-default-hover)" : "transparent",
-        color: active ? "var(--mantine-color-text)" : "var(--mantine-color-dimmed)",
-        fontSize: 14,
-        fontWeight: 500,
-        width: "100%",
-        cursor: "pointer",
-      }}
-    >
-      <Icon size={18} />
-      {label}
-    </UnstyledButton>
-  );
-}
-
-function MobileTabButton({ active, label, icon: Icon, onClick }) {
-  return (
-    <UnstyledButton
-      onClick={onClick}
-      style={{
-        flex: 1,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 4,
-        color: active ? "var(--mantine-color-text)" : "var(--mantine-color-dimmed)",
-        cursor: "pointer",
-        padding: "8px 0",
-      }}
-    >
-      <Box
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: 56,
-          height: 28,
-          borderRadius: 9999,
-          background: active ? "var(--mantine-color-default-hover)" : "transparent",
-          transition: "background 160ms ease",
-        }}
-      >
-        <Icon size={18} />
-      </Box>
-      <Text fz={11} fw={500}>
-        {label}
-      </Text>
-    </UnstyledButton>
-  );
-}
 
 function App() {
   const state = useStore();
