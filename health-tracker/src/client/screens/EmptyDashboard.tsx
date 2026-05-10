@@ -26,17 +26,22 @@ export type EmptyDashboardProps = {
   me: Member;
   entries: Entry[];
   onLogToday: () => void;
+  /** Wall-clock instant used for the time-of-day greeting. Defaulted at the
+   * call site so production callers don't need to pass it; tests inject a
+   * fixed Date to exercise each branch without globals. */
+  now?: Date;
 };
 
 export function EmptyDashboard({
   me,
   entries,
   onLogToday,
+  now = new Date(),
 }: EmptyDashboardProps) {
   const myEntries = entries.filter((e) => e.memberId === me.id);
   const count = myEntries.length;
   const today = getToday();
-  const hour = new Date().getHours();
+  const hour = now.getHours();
   const greeting =
     hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 

@@ -9,6 +9,7 @@
 
 [test]
 root = "tests"
+preload = ["./tests/setup/dom.ts"]
 
 [install]
 # Match the v1.2+ default explicitly so a newer Bun changing this
