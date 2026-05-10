@@ -1,60 +1,21 @@
 import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import type {
+  Entry,
+  Household,
+  Member,
+  MemberAccess,
+  Sex,
+  Units,
+} from "../lib/types";
 
-type Sex = "M" | "F";
-type Units = "metric" | "imperial" | "uk";
-type Theme = "system" | "light" | "dark";
-
-export type Member = {
-  id: string;
-  displayName: string;
-  initials: string;
-  heightCm: number | null;
-  age: number | null;
-  sex: Sex | null;
-  activityLevel: number | null;
-  startWeightKg: number | null;
-  goalWeightKg: number | null;
-  targetDate: string | null;
-  units: Units | null;
-  theme: Theme;
-  shareDetails: boolean;
-  reminderTime: string;
-  milestoneAlerts: boolean;
-  resetGracePeriodDays: number;
-  isMe: boolean;
-  tone: string;
-  profileComplete: boolean;
-};
-
-export type Entry = {
-  id: string;
-  memberId: string;
-  date: string;
-  weightKg: number;
-  bodyFatPct: number | null;
-  waistCm: number | null;
-  note: string | null;
-};
-
-type Household = {
-  id: string;
-  name: string;
-  createdAt: string;
-  locale: string;
-};
+export type { Entry, Member } from "../lib/types";
 
 type CurrentUser = {
   id: string;
   displayName: string;
   fromHomeAssistant: boolean;
-};
-
-type MemberAccess = {
-  id: string;
-  ownerId: string | null;
-  profileComplete: boolean;
 };
 
 const DAY = 86_400_000;
