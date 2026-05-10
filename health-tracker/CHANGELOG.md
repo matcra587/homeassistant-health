@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2
+
+*   Fixed a timezone bug that stored picked dates one day earlier than
+    selected, and a related issue that prevented saving target dates in
+    the first-run setup and the add-member flow.
+
 ## 0.3.1
 
 *   Fixed the dashboard greeting so it reflects the actual time of day instead
