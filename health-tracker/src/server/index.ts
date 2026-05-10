@@ -1,7 +1,5 @@
 import { serve } from "bun";
 import { getHealthStatus, getReadinessStatus } from "../lib/health";
-import type { Member } from "../lib/types";
-import index from "./index.html";
 import {
   EntryDeleteSchema,
   EntrySchema,
@@ -9,7 +7,9 @@ import {
   MemberPatchRequestSchema,
   MemberSchema,
   parseBody,
-} from "./schemas";
+} from "../lib/schemas";
+import type { Member } from "../lib/types";
+import index from "./index.html";
 import {
   bootstrap,
   csvExport,

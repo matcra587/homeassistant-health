@@ -1,19 +1,17 @@
 /**
- * Valibot schemas for HTTP request bodies.
+ * Valibot schemas shared by server and client.
  *
- * These are the source of truth for what the server accepts at its boundary.
- * The schemas express the same range constraints that validateProfilePatch
- * used to enforce manually, plus the shape checks that previously lived in
- * `JSON.parse(text) as T` (which checked nothing at all).
+ * Server uses them at the HTTP request boundary (parseBody throws Response
+ * to be caught by the route wrapper). Client uses them at the response
+ * boundary (parseResponse throws Error so callers can surface it normally).
  *
- * Schemas mirror the types in src/lib/types.ts; the helper at the bottom of
- * the file asserts the inferred output of each schema is structurally
- * compatible with its target type, so a drift between schema and type is a
- * compile error.
+ * Schemas mirror the types in src/lib/types.ts; the helpers at the bottom
+ * assert each schema's inferred output is structurally compatible with its
+ * target type, so a drift fails type-check rather than runtime.
  */
 
 import * as v from "valibot";
-import type { Entry, Member } from "../lib/types";
+import type { Entry, Household, Member } from "./types";
 
 const SexSchema = v.picklist(["M", "F"]);
 const UnitsSchema = v.picklist(["metric", "imperial", "uk"]);
@@ -69,18 +67,46 @@ export const MemberPatchRequestSchema = v.object({
   patch: MemberPatchSchema,
 });
 
+export const HouseholdSchema = v.object({
+  id: v.string(),
+  name: v.string(),
+  createdAt: v.string(),
+  locale: v.string(),
+});
+
+export const BootstrapPayloadSchema = v.object({
+  members: v.array(MemberSchema),
+  entries: v.array(EntrySchema),
+  household: HouseholdSchema,
+  today: v.string(),
+});
+
 // Compile-time guards: the inferred output type from each schema must be
 // assignable to the canonical type from src/lib/types. A drift fails the
 // type-check rather than slipping through to runtime.
 const _memberAssign: (m: v.InferOutput<typeof MemberSchema>) => Member = (m) =>
   m;
 const _entryAssign: (e: v.InferOutput<typeof EntrySchema>) => Entry = (e) => e;
+const _householdAssign: (
+  h: v.InferOutput<typeof HouseholdSchema>,
+) => Household = (h) => h;
 void _memberAssign;
 void _entryAssign;
+void _householdAssign;
+
+function formatIssues(error: v.ValiError<v.GenericSchema>): string {
+  return error.issues
+    .map((issue) => {
+      const path = issue.path?.map((p) => String(p.key)).join(".") ?? "body";
+      return `${path}: ${issue.message}`;
+    })
+    .join("; ");
+}
 
 /**
  * Parse a request body against a schema and convert ValiError into a 422
- * Response so the existing route wrapper can surface it as a JSON error.
+ * Response so the existing server route wrapper can surface it as a JSON
+ * error. Server-only.
  */
 export function parseBody<TSchema extends v.GenericSchema>(
   schema: TSchema,
@@ -90,15 +116,26 @@ export function parseBody<TSchema extends v.GenericSchema>(
     return v.parse(schema, body);
   } catch (error) {
     if (error instanceof v.ValiError) {
-      const message = error.issues
-        .map((issue) => {
-          const path =
-            issue.path?.map((p: { key?: PropertyKey }) => p.key).join(".") ??
-            "body";
-          return `${path}: ${issue.message}`;
-        })
-        .join("; ");
+      const message = formatIssues(error);
       throw new Response(message || "Invalid request body", { status: 422 });
+    }
+    throw error;
+  }
+}
+
+/**
+ * Parse a server response against a schema and convert ValiError into a
+ * regular Error so the client can surface it through normal error handling.
+ */
+export function parseResponse<TSchema extends v.GenericSchema>(
+  schema: TSchema,
+  body: unknown,
+): v.InferOutput<TSchema> {
+  try {
+    return v.parse(schema, body);
+  } catch (error) {
+    if (error instanceof v.ValiError) {
+      throw new Error(`Server response failed schema: ${formatIssues(error)}`);
     }
     throw error;
   }

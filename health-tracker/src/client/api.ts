@@ -1,7 +1,14 @@
+import type * as v from "valibot";
+import {
+  BootstrapPayloadSchema,
+  EntrySchema,
+  MemberSchema,
+  parseResponse,
+} from "../lib/schemas";
 import type { Entry, Member } from "../lib/types";
 import { apiUrl } from "./api-url";
 import { hasCompleteProfile } from "./lib/calc";
-import { __store, applyBootstrap, type BootstrapPayload } from "./store";
+import { __store, applyBootstrap } from "./store";
 
 type ApiRequestOptions = {
   method?: string;
@@ -9,10 +16,10 @@ type ApiRequestOptions = {
   headers?: Record<string, string>;
 };
 
-async function request<T = unknown>(
+async function request(
   path: string,
   options: ApiRequestOptions = {},
-): Promise<T | null> {
+): Promise<unknown> {
   const init: RequestInit = {
     headers: {
       "content-type": "application/json",
@@ -27,7 +34,16 @@ async function request<T = unknown>(
     throw new Error(message || `Request failed: ${response.status}`);
   }
   if (response.status === 204) return null;
-  return (await response.json()) as T;
+  return await response.json();
+}
+
+async function requestParsed<TSchema extends v.GenericSchema>(
+  path: string,
+  schema: TSchema,
+  options: ApiRequestOptions = {},
+): Promise<v.InferOutput<TSchema>> {
+  const body = await request(path, options);
+  return parseResponse(schema, body);
 }
 
 export type UpdateMemberOptions = {
@@ -35,11 +51,15 @@ export type UpdateMemberOptions = {
 };
 
 export const db = {
-  async bootstrap(): Promise<BootstrapPayload | null> {
-    const payload = await request<BootstrapPayload>("/api/bootstrap", {
-      method: "GET",
-      body: null,
-    });
+  async bootstrap() {
+    const payload = await requestParsed(
+      "/api/bootstrap",
+      BootstrapPayloadSchema,
+      {
+        method: "GET",
+        body: null,
+      },
+    );
     applyBootstrap(payload);
     return payload;
   },
@@ -66,9 +86,10 @@ export const db = {
     if (idx >= 0) list[idx] = entry;
     else list.unshift(entry);
     __store.notify();
-    request("/api/entries", { method: "POST", body: entry }).catch((error) =>
-      console.error("Failed to save entry", error),
-    );
+    requestParsed("/api/entries", EntrySchema, {
+      method: "POST",
+      body: entry,
+    }).catch((error) => console.error("Failed to save entry", error));
     return entry;
   },
 
@@ -95,9 +116,10 @@ export const db = {
         return db.updateMember(currentMember.id, patch, options);
       }
     }
-    let saved: Member | null = null;
     try {
-      saved = await request<Member>("/api/members", {
+      // PATCH returns 204 (no body); local state is updated optimistically
+      // from the patch itself.
+      await request("/api/members", {
         method: "PATCH",
         body: { id, patch },
       });
@@ -119,7 +141,7 @@ export const db = {
     }
     const m = __store.state.members.find((x) => x.id === id);
     if (m) {
-      Object.assign(m, saved ?? patch);
+      Object.assign(m, patch);
       m.profileComplete = hasCompleteProfile(m);
     }
     __store.notify();
@@ -151,13 +173,13 @@ export const db = {
       ...profile,
     };
     member.profileComplete = hasCompleteProfile(member);
-    const saved = await request<Member>("/api/members", {
+    const saved = await requestParsed("/api/members", MemberSchema, {
       method: "POST",
       body: member,
     });
-    __store.state.members.push(saved ?? member);
+    __store.state.members.push(saved);
     __store.notify();
-    return saved ?? member;
+    return saved;
   },
 
   async removeMember(id: string): Promise<void> {
