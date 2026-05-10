@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.1
+
+*   Require profile setup before the dashboard accepts weight entries.
+*   Removed placeholder profile defaults for Home Assistant users and household
+    members.
+*   Added validation for required units, activity level, target date, starting
+    weight, and target weight.
+
 ## 0.2.0
 
 *   Added the Home Assistant Health dashboard, entries, household, and profile

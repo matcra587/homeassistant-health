@@ -80,6 +80,7 @@ import logoUrl from "../../logo.png";
       resetGracePeriodDays: 1,
       isMe: true,
       tone: "iris",
+      profileComplete: true,
     },
     {
       id: "m2",
@@ -99,6 +100,7 @@ import logoUrl from "../../logo.png";
       resetGracePeriodDays: 1,
       isMe: false,
       tone: "theo",
+      profileComplete: true,
     },
     {
       id: "m3",
@@ -118,6 +120,7 @@ import logoUrl from "../../logo.png";
       resetGracePeriodDays: 2,
       isMe: false,
       tone: "margot",
+      profileComplete: true,
     },
     {
       id: "m4",
@@ -137,6 +140,7 @@ import logoUrl from "../../logo.png";
       resetGracePeriodDays: 1,
       isMe: false,
       tone: "sam",
+      profileComplete: true,
     },
   ];
 
@@ -931,16 +935,26 @@ function applyBootstrap(payload) {
   window.__app.notify();
 }
 
+function hasCompleteProfile(member) {
+  return Boolean(
+    member &&
+    member.displayName?.trim() &&
+    Number.isFinite(member.heightCm) &&
+    Number.isFinite(member.age) &&
+    (member.sex === "F" || member.sex === "M") &&
+    Number.isFinite(member.activityLevel) &&
+    Number.isFinite(member.startWeightKg) &&
+    Number.isFinite(member.goalWeightKg) &&
+    member.targetDate &&
+    member.units
+  );
+}
+
 const db = {
   async bootstrap() {
-    try {
-      const payload = await api.request("/api/bootstrap", { method: "GET", body: null });
-      applyBootstrap(payload);
-      return payload;
-    } catch (error) {
-      console.warn("Using local demo health data", error);
-      return null;
-    }
+    const payload = await api.request("/api/bootstrap", { method: "GET", body: null });
+    applyBootstrap(payload);
+    return payload;
   },
   async listMembers() { return window.__app.state.members; },
   async getMember(id) { return window.__app.state.members.find((m) => m.id === id) || null; },
@@ -963,11 +977,21 @@ const db = {
     window.__app.notify();
     api.request("/api/entries", { method: "DELETE", body: { id } }).catch((error) => console.error("Failed to delete entry", error));
   },
-  async updateMember(id, patch) {
+  async updateMember(id, patch, options = {}) {
+    let saved;
+    try {
+      saved = await api.request("/api/members", { method: "PATCH", body: { id, patch } });
+    } catch (error) {
+      console.error("Failed to update member", error);
+      if (options.throwOnError) throw error;
+      return window.__app.state.members.find((x) => x.id === id) || null;
+    }
     const m = window.__app.state.members.find((x) => x.id === id);
-    if (m) Object.assign(m, patch);
+    if (m) {
+      Object.assign(m, saved || patch);
+      m.profileComplete = hasCompleteProfile(m);
+    }
     window.__app.notify();
-    api.request("/api/members", { method: "PATCH", body: { id, patch } }).catch((error) => console.error("Failed to update member", error));
     return m;
   },
   async addMember(profile) {
@@ -979,13 +1003,11 @@ const db = {
       milestoneAlerts: true,
       reminderTime: "08:00",
       resetGracePeriodDays: 1,
-      activityLevel: 1.4,
       colorIdx: window.__app.state.members.length % 6,
-      targetDate: new Date(Date.now() + 90 * 86400000).toISOString(),
       tone: "sam",
-      units: profile.units ?? "metric",
       ...profile,
     };
+    member.profileComplete = hasCompleteProfile(member);
     const savedMember = await api.request("/api/members", { method: "POST", body: member });
     window.__app.state.members.push(savedMember || member);
     window.__app.notify();
@@ -2111,7 +2133,7 @@ function ProfileScreen({ me, units, onUpdate, onUnits }) {
           <span className="serif-it">Profile</span> & settings
         </h1>
         <p style={{ color: "var(--ink-3)", fontSize: 14, margin: "6px 0 0 0" }}>
-          Quiet defaults. Change anything below — it saves as you go.
+          Change anything below. It saves as you go.
           {savedAt && <span className="serif-it" style={{ marginLeft: 10, color: "var(--sage-2)" }}>· saved</span>}
         </p>
       </header>
@@ -2463,32 +2485,57 @@ function MilestoneModal({ kind, member, onSetNewGoal, onMaintain, onClose }) {
 }
 
 // ---------- First-run ----------
-function FirstRun({ onDone }) {
+function FirstRun({ profile, onDone }) {
   const [step, setStep] = useState(0);
-  const [name, setName] = useState("");
-  const [units, setUnits] = useState("metric");
-  const [height, setHeight] = useState("");
-  const [age, setAge] = useState("");
-  const [sex, setSex] = useState("F");
-  const [start, setStart] = useState("");
-  const [goal, setGoal] = useState("");
+  const [name, setName] = useState(profile?.displayName ?? "");
+  const [units, setUnits] = useState(profile?.units ?? "");
+  const [height, setHeight] = useState(profile?.heightCm ?? "");
+  const [age, setAge] = useState(profile?.age ?? "");
+  const [sex, setSex] = useState(profile?.sex ?? "");
+  const [activityLevel, setActivityLevel] = useState(profile?.activityLevel ? String(profile.activityLevel) : "");
+  const [start, setStart] = useState(profile?.startWeightKg ?? "");
+  const [goal, setGoal] = useState(profile?.goalWeightKg ?? "");
+  const [targetDate, setTargetDate] = useState(profile?.targetDate ? new Date(profile.targetDate).toISOString().slice(0, 10) : "");
+  const [error, setError] = useState(null);
 
   const steps = ["Welcome", "About you", "Where you're starting"];
+  const usingImperial = units === "imperial";
 
-  function complete() {
-    const heightCm = units === "imperial" ? parseFloat(height) / CM_TO_IN : parseFloat(height);
-    const startKg = units === "imperial" ? lbToKg(parseFloat(start)) : parseFloat(start);
-    const goalKg = units === "imperial" ? lbToKg(parseFloat(goal)) : parseFloat(goal);
-    onDone({
-      displayName: name,
-      initials: name.slice(0, 2).toUpperCase(),
-      heightCm,
-      age: parseInt(age, 10),
-      sex,
-      startWeightKg: startKg,
-      goalWeightKg: goalKg,
-      units,
-    });
+  function validNumber(value) {
+    return Number.isFinite(parseFloat(value));
+  }
+
+  function aboutComplete() {
+    return Boolean(name.trim() && units && validNumber(height) && validNumber(age) && sex && activityLevel);
+  }
+
+  function startComplete() {
+    return Boolean(validNumber(start) && validNumber(goal) && targetDate);
+  }
+
+  async function complete() {
+    setError(null);
+    const heightCm = usingImperial ? parseFloat(height) / CM_TO_IN : parseFloat(height);
+    const startKg = usingImperial ? lbToKg(parseFloat(start)) : parseFloat(start);
+    const goalKg = usingImperial ? lbToKg(parseFloat(goal)) : parseFloat(goal);
+    const date = new Date(targetDate);
+    date.setHours(8, 0, 0, 0);
+    try {
+      await onDone({
+        displayName: name.trim(),
+        initials: name.trim().slice(0, 2).toUpperCase(),
+        heightCm: Math.round(heightCm * 10) / 10,
+        age: parseInt(age, 10),
+        sex,
+        activityLevel: parseFloat(activityLevel),
+        startWeightKg: Math.round(startKg * 10) / 10,
+        goalWeightKg: Math.round(goalKg * 10) / 10,
+        targetDate: date.toISOString(),
+        units,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save profile.");
+    }
   }
 
   return (
@@ -2514,7 +2561,7 @@ function FirstRun({ onDone }) {
               <span className="serif-it">Welcome.</span>
             </h1>
             <p style={{ color: "var(--ink-2)", fontSize: 15, margin: "0 0 28px 0", maxWidth: 420 }}>
-              A small, calm space for your household to track weight together — without the surveillance feel of cloud apps. Everything stays on this device.
+              A small, calm space for your household to track weight together. Add the required fields once, then start logging.
             </p>
             <button className="btn btn-primary" onClick={() => setStep(1)}>Begin</button>
           </div>
@@ -2529,19 +2576,33 @@ function FirstRun({ onDone }) {
               Used only to estimate your derived stats.
             </p>
             <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 12 }}>
-              <Field label="Display name"><TextInput value={name} onChange={setName} placeholder="Iris" /></Field>
+              <Field label="Display name"><TextInput value={name} onChange={setName} placeholder="Display name" /></Field>
               <Field label="Units">
-                <Select value={units} onChange={setUnits} options={[{ value: "metric", label: "Metric" }, { value: "imperial", label: "Imperial" }]} />
+                <Select value={units} onChange={setUnits} options={[{ value: "", label: "Select units" }, { value: "metric", label: "Metric" }, { value: "imperial", label: "Imperial" }]} />
               </Field>
-              <Field label={units === "imperial" ? "Height (in)" : "Height (cm)"}><TextInput type="number" value={height} onChange={setHeight} /></Field>
+              <Field label={usingImperial ? "Height (in)" : "Height (cm)"}><TextInput type="number" value={height} onChange={setHeight} /></Field>
               <Field label="Age"><TextInput type="number" value={age} onChange={setAge} /></Field>
               <Field label="Sex (for estimates)">
-                <Select value={sex} onChange={setSex} options={[{ value: "F", label: "Female" }, { value: "M", label: "Male" }]} />
+                <Select value={sex} onChange={setSex} options={[{ value: "", label: "Select" }, { value: "F", label: "Female" }, { value: "M", label: "Male" }]} />
+              </Field>
+              <Field label="Activity level">
+                <Select
+                  value={activityLevel}
+                  onChange={setActivityLevel}
+                  options={[
+                    { value: "", label: "Select activity" },
+                    { value: "1.2", label: "Sedentary" },
+                    { value: "1.4", label: "Light" },
+                    { value: "1.55", label: "Moderate" },
+                    { value: "1.7", label: "Active" },
+                    { value: "1.9", label: "Very active" },
+                  ]}
+                />
               </Field>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 24 }}>
               <button className="btn btn-ghost" onClick={() => setStep(0)}>Back</button>
-              <button className="btn btn-primary" disabled={!name || !height || !age} onClick={() => setStep(2)}>Continue</button>
+              <button className="btn btn-primary" disabled={!aboutComplete()} onClick={() => setStep(2)}>Continue</button>
             </div>
           </div>
         )}
@@ -2552,19 +2613,23 @@ function FirstRun({ onDone }) {
               <span className="serif-it">Where</span> you're starting
             </h1>
             <p style={{ color: "var(--ink-3)", fontSize: 14, margin: "0 0 22px 0" }}>
-              You can change either of these any time.
+              These fields are required before the dashboard can calculate progress.
             </p>
             <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 12 }}>
-              <Field label={units === "imperial" ? "Today's weight (lb)" : "Today's weight (kg)"}>
+              <Field label={usingImperial ? "Today's weight (lb)" : "Today's weight (kg)"}>
                 <TextInput type="number" step="0.1" value={start} onChange={setStart} />
               </Field>
-              <Field label={units === "imperial" ? "Target weight (lb)" : "Target weight (kg)"}>
+              <Field label={usingImperial ? "Target weight (lb)" : "Target weight (kg)"}>
                 <TextInput type="number" step="0.1" value={goal} onChange={setGoal} />
               </Field>
+              <Field label="Target date">
+                <TextInput type="date" value={targetDate} onChange={setTargetDate} />
+              </Field>
             </div>
+            {error && <p style={{ color: "var(--terracotta)", fontSize: 13, margin: "14px 0 0" }}>{error}</p>}
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 24 }}>
               <button className="btn btn-ghost" onClick={() => setStep(1)}>Back</button>
-              <button className="btn btn-primary" disabled={!start || !goal} onClick={complete}>Begin tracking</button>
+              <button className="btn btn-primary" disabled={!startComplete()} onClick={complete}>Begin tracking</button>
             </div>
           </div>
         )}
@@ -2746,31 +2811,42 @@ function AddMemberModal({ onAdd, onClose }) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
     displayName: "",
-    sex: "F",
+    sex: "",
     age: "",
     heightCm: "",
+    activityLevel: "",
     startWeightKg: "",
     goalWeightKg: "",
+    targetDate: "",
     colorIdx: 2,
     shareDetails: false,
   });
-  const [units, setUnits] = useState("metric");
+  const [units, setUnits] = useState("");
   const [error, setError] = useState(null);
   const inputRef = useRef(null);
   useEffect(() => { inputRef.current?.focus(); }, [step]);
 
   function update(patch) { setForm({ ...form, ...patch }); setError(null); }
+  function updateUnits(value) { setUnits(value); setError(null); }
+
+  function validNumber(value) {
+    return Number.isFinite(parseFloat(value));
+  }
 
   function validateBasics() {
     if (!form.displayName.trim()) return "Please enter a name.";
-    if (!form.heightCm || form.heightCm < (units === "imperial" ? 36 : 90)) return "Please enter a height.";
-    if (!form.age || form.age < 5 || form.age > 110) return "Please enter a sensible age.";
+    if (!units) return "Please select units.";
+    if (!validNumber(form.heightCm) || parseFloat(form.heightCm) < (units === "imperial" ? 36 : 90)) return "Please enter a height.";
+    if (!validNumber(form.age) || parseFloat(form.age) < 5 || parseFloat(form.age) > 110) return "Please enter a sensible age.";
+    if (!form.sex) return "Please select sex.";
+    if (!form.activityLevel) return "Please select activity level.";
     return null;
   }
 
   function validateWeights() {
-    if (!form.startWeightKg) return "Please enter today's weight.";
-    if (!form.goalWeightKg) return "Please enter a target weight.";
+    if (!validNumber(form.startWeightKg)) return "Please enter today's weight.";
+    if (!validNumber(form.goalWeightKg)) return "Please enter a target weight.";
+    if (!form.targetDate || Number.isNaN(new Date(form.targetDate).getTime())) return "Please select a target date.";
     return null;
   }
 
@@ -2778,8 +2854,10 @@ function AddMemberModal({ onAdd, onClose }) {
     const err = validateBasics() || validateWeights();
     if (err) { setError(err); return; }
     const heightCm = units === "imperial" ? parseFloat(form.heightCm) / CM_TO_IN : parseFloat(form.heightCm);
-    const startKg = form.startWeightKg ? (units === "imperial" ? lbToKg(parseFloat(form.startWeightKg)) : parseFloat(form.startWeightKg)) : null;
-    const goalKg = form.goalWeightKg ? (units === "imperial" ? lbToKg(parseFloat(form.goalWeightKg)) : parseFloat(form.goalWeightKg)) : null;
+    const startKg = units === "imperial" ? lbToKg(parseFloat(form.startWeightKg)) : parseFloat(form.startWeightKg);
+    const goalKg = units === "imperial" ? lbToKg(parseFloat(form.goalWeightKg)) : parseFloat(form.goalWeightKg);
+    const targetDate = new Date(form.targetDate);
+    targetDate.setHours(8, 0, 0, 0);
     try {
       await onAdd({
         displayName: form.displayName.trim(),
@@ -2787,8 +2865,10 @@ function AddMemberModal({ onAdd, onClose }) {
         sex: form.sex,
         age: parseInt(form.age, 10),
         heightCm: Math.round(heightCm * 10) / 10,
-        startWeightKg: startKg,
-        goalWeightKg: goalKg,
+        activityLevel: parseFloat(form.activityLevel),
+        startWeightKg: Math.round(startKg * 10) / 10,
+        goalWeightKg: Math.round(goalKg * 10) / 10,
+        targetDate: targetDate.toISOString(),
         colorIdx: form.colorIdx,
         shareDetails: form.shareDetails,
         units,
@@ -2801,6 +2881,8 @@ function AddMemberModal({ onAdd, onClose }) {
   const palette = [0, 1, 2, 3, 4, 5];
   const startWeightError = error?.includes("today") ? error : null;
   const targetWeightError = error?.includes("target") ? error : null;
+  const targetDateError = error?.includes("date") ? error : null;
+  const stepOneError = error && !startWeightError && !targetWeightError && !targetDateError ? error : null;
 
   return (
     <Modal onClose={onClose} maxWidth={520}>
@@ -2844,14 +2926,28 @@ function AddMemberModal({ onAdd, onClose }) {
               <input className="md-input" type="number" value={form.age} onChange={(e) => update({ age: e.target.value })} />
             </Field>
             <Field label="Sex (for estimates)">
-              <Select value={form.sex} onChange={(v) => update({ sex: v })} options={[{ value: "F", label: "Female" }, { value: "M", label: "Male" }]} />
+              <Select value={form.sex} onChange={(v) => update({ sex: v })} options={[{ value: "", label: "Select" }, { value: "F", label: "Female" }, { value: "M", label: "Male" }]} />
             </Field>
           </div>
           <Field label="Units">
-            <Select value={units} onChange={setUnits} options={[{ value: "metric", label: "Metric (kg, cm)" }, { value: "imperial", label: "Imperial (lb, in)" }]} />
+            <Select value={units} onChange={updateUnits} options={[{ value: "", label: "Select units" }, { value: "metric", label: "Metric (kg, cm)" }, { value: "imperial", label: "Imperial (lb, in)" }]} />
           </Field>
           <Field label={units === "imperial" ? "Height (in)" : "Height (cm)"}>
             <input className="md-input" type="number" step="0.1" value={form.heightCm} onChange={(e) => update({ heightCm: e.target.value })} />
+          </Field>
+          <Field label="Activity level">
+            <Select
+              value={form.activityLevel}
+              onChange={(v) => update({ activityLevel: v })}
+              options={[
+                { value: "", label: "Select activity" },
+                { value: "1.2", label: "Sedentary" },
+                { value: "1.4", label: "Light" },
+                { value: "1.55", label: "Moderate" },
+                { value: "1.7", label: "Active" },
+                { value: "1.9", label: "Very active" },
+              ]}
+            />
           </Field>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, gap: 12 }}>
@@ -2875,7 +2971,11 @@ function AddMemberModal({ onAdd, onClose }) {
             <Field label={units === "imperial" ? "Target weight (lb)" : "Target weight (kg)"} error={targetWeightError}>
               <input className="md-input" type="number" step="0.1" value={form.goalWeightKg} onChange={(e) => update({ goalWeightKg: e.target.value })} placeholder="—" />
             </Field>
+            <Field label="Target date" error={targetDateError}>
+              <input className="md-input" type="date" value={form.targetDate} onChange={(e) => update({ targetDate: e.target.value })} />
+            </Field>
           </div>
+          {stepOneError && <p style={{ color: "var(--md-error)", fontSize: 13, margin: 0 }}>{stepOneError}</p>}
           <ToggleRow
             label="Share exact numbers in Household"
             sub="Off by default. Each member can change this themselves later."
@@ -3663,9 +3763,9 @@ function App() {
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [milestone, setMilestone] = useState(null);
   const [tweaks, setTweaks] = useTweaks(TWEAK_DEFAULTS);
-  const [firstRunDone, setFirstRunDone] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
   const [bootstrapped, setBootstrapped] = useState(false);
+  const [bootstrapError, setBootstrapError] = useState(null);
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 900);
@@ -3675,9 +3775,13 @@ function App() {
 
   useEffect(() => {
     let active = true;
-    db.bootstrap().finally(() => {
-      if (active) setBootstrapped(true);
-    });
+    db.bootstrap()
+      .catch((error) => {
+        if (active) setBootstrapError(error);
+      })
+      .finally(() => {
+        if (active) setBootstrapped(true);
+      });
     return () => {
       active = false;
     };
@@ -3691,6 +3795,10 @@ function App() {
   }, [tweaks.theme]);
 
   const me = state.members.find((m) => m.isMe);
+
+  useEffect(() => {
+    if (me?.units) setUnits(me.units);
+  }, [me?.units]);
 
   function handleSaveEntry(entry) {
     db.upsertEntry(entry);
@@ -3721,13 +3829,41 @@ function App() {
     );
   }
 
-  if (tweaks.showFirstRun || !firstRunDone) {
+  if (bootstrapError) {
+    return (
+      <div className="app-shell" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
+        <section className="card" style={{ maxWidth: 420, padding: 28, textAlign: "center" }}>
+          <Logo size={34} />
+          <h1 className="md-title-l" style={{ margin: "20px 0 8px" }}>Home Assistant sign-in required</h1>
+          <p className="md-body-m" style={{ color: "var(--md-on-surface-variant)", margin: 0 }}>
+            Open this add-on through Home Assistant ingress to load your health profile.
+          </p>
+        </section>
+      </div>
+    );
+  }
+
+  if (!me) {
+    return (
+      <div className="app-shell" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
+        <section className="card" style={{ maxWidth: 420, padding: 28, textAlign: "center" }}>
+          <Logo size={34} />
+          <h1 className="md-title-l" style={{ margin: "20px 0 8px" }}>Profile unavailable</h1>
+          <p className="md-body-m" style={{ color: "var(--md-on-surface-variant)", margin: 0 }}>
+            Home Assistant Health could not load your profile.
+          </p>
+        </section>
+      </div>
+    );
+  }
+
+  if (tweaks.showFirstRun || !me.profileComplete) {
     return (
       <FirstRun
-        onDone={(profile) => {
-          db.updateMember(me.id, profile);
+        profile={me}
+        onDone={async (profile) => {
+          await db.updateMember(me.id, profile, { throwOnError: true });
           setUnits(profile.units);
-          setFirstRunDone(true);
           setTweaks("showFirstRun", false);
         }}
       />

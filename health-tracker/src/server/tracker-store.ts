@@ -9,20 +9,21 @@ export type Member = {
   id: string;
   displayName: string;
   initials: string;
-  heightCm: number;
-  age: number;
-  sex: Sex;
-  activityLevel: number;
-  startWeightKg: number;
-  goalWeightKg: number;
-  targetDate: string;
-  units: Units;
+  heightCm: number | null;
+  age: number | null;
+  sex: Sex | null;
+  activityLevel: number | null;
+  startWeightKg: number | null;
+  goalWeightKg: number | null;
+  targetDate: string | null;
+  units: Units | null;
   shareDetails: boolean;
   reminderTime: string;
   milestoneAlerts: boolean;
   resetGracePeriodDays: number;
   isMe: boolean;
   tone: string;
+  profileComplete: boolean;
 };
 
 export type Entry = {
@@ -51,9 +52,14 @@ type CurrentUser = {
 type MemberAccess = {
   id: string;
   ownerId: string | null;
+  profileComplete: boolean;
 };
 
 const DAY = 86_400_000;
+const DEV_USER = {
+  id: "dev-user-001",
+  displayName: "Development User",
+};
 const DEFAULT_DB_PATH =
   Bun.env.NODE_ENV === "production" ? "/config/health.db" : ".data/health.db";
 const DB_PATH =
@@ -89,18 +95,31 @@ function currentUserFromHeaders(headers: Headers): CurrentUser {
     headers.get("x-ha-user-id") ??
     headers.get("x-remote-user-id") ??
     headers.get("x-user-id");
+  const username =
+    headers.get("x-ha-user-name") ??
+    headers.get("x-remote-user-name") ??
+    headers.get("x-user-name");
   const displayName =
     headers.get("x-ha-user-display-name") ??
     headers.get("x-remote-user-display-name") ??
-    headers.get("x-ha-user-name") ??
-    headers.get("x-remote-user-name") ??
+    username ??
     "Home Assistant User";
 
   if (id) {
     return { id, displayName, fromHomeAssistant: true };
   }
 
-  return { id: "demo-user", displayName: "Iris", fromHomeAssistant: false };
+  if (Bun.env.NODE_ENV !== "production") {
+    return {
+      id: DEV_USER.id,
+      displayName: DEV_USER.displayName,
+      fromHomeAssistant: true,
+    };
+  }
+
+  throw new Response("Home Assistant ingress user is required", {
+    status: 401,
+  });
 }
 
 function getDb(): Database {
@@ -132,19 +151,20 @@ function initSchema(database: Database): void {
       owner_id                 TEXT,
       display_name             TEXT NOT NULL,
       initials                 TEXT NOT NULL,
-      height_cm                REAL NOT NULL,
-      age                      INTEGER NOT NULL,
-      sex                      TEXT NOT NULL CHECK (sex IN ('M', 'F')),
-      activity_level           REAL NOT NULL,
-      start_weight_kg          REAL NOT NULL,
-      goal_weight_kg           REAL NOT NULL,
-      target_date              TEXT NOT NULL,
-      units                    TEXT NOT NULL CHECK (units IN ('metric', 'imperial', 'uk')),
+      height_cm                REAL,
+      age                      INTEGER,
+      sex                      TEXT CHECK (sex IN ('M', 'F') OR sex IS NULL),
+      activity_level           REAL,
+      start_weight_kg          REAL,
+      goal_weight_kg           REAL,
+      target_date              TEXT,
+      units                    TEXT CHECK (units IN ('metric', 'imperial', 'uk') OR units IS NULL),
       share_details            INTEGER NOT NULL,
       reminder_time            TEXT NOT NULL,
       milestone_alerts         INTEGER NOT NULL,
       reset_grace_period_days  INTEGER NOT NULL,
       tone                     TEXT NOT NULL,
+      profile_complete         INTEGER NOT NULL DEFAULT 0,
       created_at               TEXT DEFAULT (datetime('now')),
       updated_at               TEXT DEFAULT (datetime('now'))
     );
@@ -167,10 +187,168 @@ function initSchema(database: Database): void {
 function migrateSchema(database: Database): void {
   const columns = database.prepare("PRAGMA table_info(members)").all() as {
     name: string;
+    notnull: number;
   }[];
+  const columnNames = new Set(columns.map((column) => column.name));
   if (!columns.some((column) => column.name === "owner_id")) {
     database.exec("ALTER TABLE members ADD COLUMN owner_id TEXT");
   }
+  if (!columns.some((column) => column.name === "profile_complete")) {
+    database.exec(
+      "ALTER TABLE members ADD COLUMN profile_complete INTEGER NOT NULL DEFAULT 0",
+    );
+  }
+
+  if (
+    [
+      "height_cm",
+      "age",
+      "sex",
+      "activity_level",
+      "start_weight_kg",
+      "goal_weight_kg",
+      "target_date",
+      "units",
+    ].some((columnName) =>
+      columns.some(
+        (column) => column.name === columnName && column.notnull === 1,
+      ),
+    )
+  ) {
+    rebuildMembersTable(database, columnNames);
+  }
+
+  clearHardcodedProfileDefaults(database);
+  refreshAllProfileComplete(database);
+}
+
+function rebuildMembersTable(
+  database: Database,
+  oldColumns: Set<string>,
+): void {
+  const ownerId = oldColumns.has("owner_id") ? "owner_id" : "NULL";
+  const profileComplete = oldColumns.has("profile_complete")
+    ? "profile_complete"
+    : "0";
+
+  database.exec("PRAGMA foreign_keys = OFF");
+  try {
+    database.exec(`
+      BEGIN;
+
+      CREATE TABLE members_new (
+        id                       TEXT PRIMARY KEY,
+        owner_id                 TEXT,
+        display_name             TEXT NOT NULL,
+        initials                 TEXT NOT NULL,
+        height_cm                REAL,
+        age                      INTEGER,
+        sex                      TEXT CHECK (sex IN ('M', 'F') OR sex IS NULL),
+        activity_level           REAL,
+        start_weight_kg          REAL,
+        goal_weight_kg           REAL,
+        target_date              TEXT,
+        units                    TEXT CHECK (units IN ('metric', 'imperial', 'uk') OR units IS NULL),
+        share_details            INTEGER NOT NULL,
+        reminder_time            TEXT NOT NULL,
+        milestone_alerts         INTEGER NOT NULL,
+        reset_grace_period_days  INTEGER NOT NULL,
+        tone                     TEXT NOT NULL,
+        profile_complete         INTEGER NOT NULL DEFAULT 0,
+        created_at               TEXT DEFAULT (datetime('now')),
+        updated_at               TEXT DEFAULT (datetime('now'))
+      );
+
+      INSERT INTO members_new (
+        id, owner_id, display_name, initials, height_cm, age, sex,
+        activity_level, start_weight_kg, goal_weight_kg, target_date,
+        units, share_details, reminder_time, milestone_alerts,
+        reset_grace_period_days, tone, profile_complete, created_at, updated_at
+      )
+      SELECT
+        id, ${ownerId}, display_name, initials, height_cm, age, sex,
+        activity_level, start_weight_kg, goal_weight_kg, target_date,
+        units, share_details, reminder_time, milestone_alerts,
+        reset_grace_period_days, tone, ${profileComplete}, created_at, updated_at
+      FROM members;
+
+      DROP TABLE members;
+      ALTER TABLE members_new RENAME TO members;
+
+      COMMIT;
+    `);
+  } catch (error) {
+    database.exec("ROLLBACK");
+    throw error;
+  } finally {
+    database.exec("PRAGMA foreign_keys = ON");
+  }
+}
+
+function clearHardcodedProfileDefaults(database: Database): void {
+  database
+    .prepare(`
+      UPDATE members
+      SET height_cm = NULL,
+          age = NULL,
+          sex = NULL,
+          activity_level = NULL,
+          start_weight_kg = NULL,
+          goal_weight_kg = NULL,
+          target_date = NULL,
+          units = NULL,
+          profile_complete = 0,
+          updated_at = datetime('now')
+      WHERE height_cm = 170
+        AND age = 35
+        AND sex = 'F'
+        AND activity_level = 1.375
+        AND start_weight_kg = 75
+        AND goal_weight_kg = 68
+        AND NOT EXISTS (
+          SELECT 1 FROM entries WHERE entries.member_id = members.id
+        )
+    `)
+    .run();
+}
+
+function refreshAllProfileComplete(database: Database): void {
+  database.exec(`
+    UPDATE members
+    SET profile_complete = CASE
+      WHEN height_cm IS NOT NULL
+        AND age IS NOT NULL
+        AND sex IS NOT NULL
+        AND activity_level IS NOT NULL
+        AND start_weight_kg IS NOT NULL
+        AND goal_weight_kg IS NOT NULL
+        AND target_date IS NOT NULL
+        AND units IS NOT NULL
+      THEN 1
+      ELSE 0
+    END
+  `);
+}
+
+function refreshProfileComplete(database: Database, memberId: string): void {
+  database
+    .prepare(`
+      UPDATE members
+      SET profile_complete = CASE
+        WHEN height_cm IS NOT NULL
+          AND age IS NOT NULL
+          AND sex IS NOT NULL
+          AND activity_level IS NOT NULL
+          AND start_weight_kg IS NOT NULL
+          AND goal_weight_kg IS NOT NULL
+          AND target_date IS NOT NULL
+          AND units IS NOT NULL
+        THEN 1
+        ELSE 0
+      END
+      WHERE id = ?
+    `)
+    .run(memberId);
 }
 
 function seededMembers(currentUser: CurrentUser): Member[] {
@@ -192,6 +370,7 @@ function seededMembers(currentUser: CurrentUser): Member[] {
       milestoneAlerts: true,
       resetGracePeriodDays: 1,
       tone: "iris",
+      profileComplete: true,
     },
     {
       id: "m2",
@@ -210,6 +389,7 @@ function seededMembers(currentUser: CurrentUser): Member[] {
       milestoneAlerts: true,
       resetGracePeriodDays: 1,
       tone: "theo",
+      profileComplete: true,
     },
     {
       id: "m3",
@@ -228,6 +408,7 @@ function seededMembers(currentUser: CurrentUser): Member[] {
       milestoneAlerts: false,
       resetGracePeriodDays: 2,
       tone: "margot",
+      profileComplete: true,
     },
     {
       id: "m4",
@@ -246,6 +427,7 @@ function seededMembers(currentUser: CurrentUser): Member[] {
       milestoneAlerts: true,
       resetGracePeriodDays: 1,
       tone: "sam",
+      profileComplete: true,
     },
   ];
 
@@ -357,8 +539,9 @@ function ensureSeeded(database: Database, currentUser: CurrentUser): void {
     INSERT INTO members (
       id, owner_id, display_name, initials, height_cm, age, sex, activity_level,
       start_weight_kg, goal_weight_kg, target_date, units, share_details,
-      reminder_time, milestone_alerts, reset_grace_period_days, tone
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      reminder_time, milestone_alerts, reset_grace_period_days, tone,
+      profile_complete
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   for (const member of seededMembers(currentUser)) {
@@ -380,6 +563,7 @@ function ensureSeeded(database: Database, currentUser: CurrentUser): void {
       member.milestoneAlerts ? 1 : 0,
       member.resetGracePeriodDays,
       member.tone,
+      member.profileComplete ? 1 : 0,
     );
   }
 
@@ -430,29 +614,23 @@ function ensureCurrentMember(
   database
     .prepare(`
       INSERT INTO members (
-        id, owner_id, display_name, initials, height_cm, age, sex, activity_level,
-        start_weight_kg, goal_weight_kg, target_date, units, share_details,
-        reminder_time, milestone_alerts, reset_grace_period_days, tone
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        id, owner_id, display_name, initials, units, share_details,
+        reminder_time, milestone_alerts, reset_grace_period_days, tone,
+        profile_complete
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     .run(
       currentUser.id,
       currentUser.id,
       currentUser.displayName,
       initials(currentUser.displayName) || "ME",
-      170,
-      35,
-      "F",
-      1.375,
-      75,
-      68,
-      daysAgo(-90).toISOString(),
-      "metric",
+      null,
       0,
       "08:00",
       1,
       1,
       "iris",
+      0,
     );
 }
 
@@ -461,20 +639,24 @@ function toMember(row: Record<string, unknown>, currentUserId: string): Member {
     id: String(row.id),
     displayName: String(row.display_name),
     initials: String(row.initials),
-    heightCm: Number(row.height_cm),
-    age: Number(row.age),
-    sex: row.sex as Sex,
-    activityLevel: Number(row.activity_level),
-    startWeightKg: Number(row.start_weight_kg),
-    goalWeightKg: Number(row.goal_weight_kg),
-    targetDate: String(row.target_date),
-    units: row.units as Units,
+    heightCm: row.height_cm == null ? null : Number(row.height_cm),
+    age: row.age == null ? null : Number(row.age),
+    sex: row.sex == null ? null : (row.sex as Sex),
+    activityLevel:
+      row.activity_level == null ? null : Number(row.activity_level),
+    startWeightKg:
+      row.start_weight_kg == null ? null : Number(row.start_weight_kg),
+    goalWeightKg:
+      row.goal_weight_kg == null ? null : Number(row.goal_weight_kg),
+    targetDate: row.target_date == null ? null : String(row.target_date),
+    units: row.units == null ? null : (row.units as Units),
     shareDetails: bool(row.share_details),
     reminderTime: String(row.reminder_time),
     milestoneAlerts: bool(row.milestone_alerts),
     resetGracePeriodDays: Number(row.reset_grace_period_days),
     isMe: row.id === currentUserId,
     tone: String(row.tone),
+    profileComplete: bool(row.profile_complete),
   };
 }
 
@@ -495,7 +677,7 @@ function getMemberAccess(
   memberId: string,
 ): MemberAccess | null {
   const row = database
-    .prepare("SELECT id, owner_id FROM members WHERE id = ?")
+    .prepare("SELECT id, owner_id, profile_complete FROM members WHERE id = ?")
     .get(memberId) as Record<string, unknown> | undefined;
 
   if (!row) {
@@ -505,6 +687,7 @@ function getMemberAccess(
   return {
     id: String(row.id),
     ownerId: row.owner_id == null ? null : String(row.owner_id),
+    profileComplete: bool(row.profile_complete),
   };
 }
 
@@ -564,6 +747,90 @@ function storeForWrite(headers: Headers): {
   }
 
   return { database, currentUser };
+}
+
+function validateProfilePatch(patch: Partial<Member>): void {
+  if (
+    patch.heightCm !== undefined &&
+    patch.heightCm !== null &&
+    (!Number.isFinite(patch.heightCm) ||
+      patch.heightCm < 90 ||
+      patch.heightCm > 250)
+  ) {
+    throw new Response("Height must be between 90 and 250 cm", { status: 422 });
+  }
+  if (
+    patch.age !== undefined &&
+    patch.age !== null &&
+    (!Number.isFinite(patch.age) || patch.age < 5 || patch.age > 110)
+  ) {
+    throw new Response("Age must be between 5 and 110", { status: 422 });
+  }
+  if (
+    patch.sex !== undefined &&
+    patch.sex !== null &&
+    patch.sex !== "M" &&
+    patch.sex !== "F"
+  ) {
+    throw new Response("Sex must be M or F", { status: 422 });
+  }
+  if (
+    patch.activityLevel !== undefined &&
+    patch.activityLevel !== null &&
+    (!Number.isFinite(patch.activityLevel) ||
+      patch.activityLevel < 1 ||
+      patch.activityLevel > 2.5)
+  ) {
+    throw new Response("Activity level must be between 1 and 2.5", {
+      status: 422,
+    });
+  }
+  if (
+    patch.startWeightKg !== undefined &&
+    patch.startWeightKg !== null &&
+    (!Number.isFinite(patch.startWeightKg) ||
+      patch.startWeightKg < 20 ||
+      patch.startWeightKg > 300)
+  ) {
+    throw new Response("Starting weight must be between 20 and 300 kg", {
+      status: 422,
+    });
+  }
+  if (
+    patch.goalWeightKg !== undefined &&
+    patch.goalWeightKg !== null &&
+    (!Number.isFinite(patch.goalWeightKg) ||
+      patch.goalWeightKg < 20 ||
+      patch.goalWeightKg > 300)
+  ) {
+    throw new Response("Target weight must be between 20 and 300 kg", {
+      status: 422,
+    });
+  }
+  if (
+    patch.units !== undefined &&
+    patch.units !== null &&
+    patch.units !== "metric" &&
+    patch.units !== "imperial" &&
+    patch.units !== "uk"
+  ) {
+    throw new Response("Units must be metric, imperial, or uk", {
+      status: 422,
+    });
+  }
+  if (
+    patch.targetDate !== undefined &&
+    patch.targetDate !== null &&
+    Number.isNaN(new Date(patch.targetDate).getTime())
+  ) {
+    throw new Response("Target date must be a valid date", { status: 422 });
+  }
+}
+
+function requireCompleteProfile(member: MemberAccess): void {
+  if (!member.profileComplete) {
+    throw new Response("Member profile is incomplete", { status: 422 });
+  }
 }
 
 function listMembers(database: Database, currentUserId: string): Member[] {
@@ -662,7 +929,12 @@ export function saveEntry(headers: Headers, entry: Entry): Entry {
   if (existingEntry) {
     requireMemberWriteAccess(database, currentUser, existingEntry.member_id);
   }
-  requireMemberWriteAccess(database, currentUser, entry.memberId);
+  const member = requireMemberWriteAccess(
+    database,
+    currentUser,
+    entry.memberId,
+  );
+  requireCompleteProfile(member);
 
   const savedEntry = {
     ...entry,
@@ -713,33 +985,64 @@ export function saveMember(headers: Headers, member: Member): Member {
   if (!member.displayName?.trim()) {
     throw new Response("Member name is required", { status: 422 });
   }
+  validateProfilePatch(member);
+  const heightCm = member.heightCm;
+  const age = member.age;
+  const sex = member.sex;
+  const activityLevel = member.activityLevel;
+  const startWeightKg = member.startWeightKg;
+  const goalWeightKg = member.goalWeightKg;
+  const targetDate = member.targetDate;
+  const units = member.units;
   if (
-    !Number.isFinite(member.heightCm) ||
-    member.heightCm < 90 ||
-    member.heightCm > 250
+    !Number.isFinite(heightCm) ||
+    heightCm === null ||
+    heightCm < 90 ||
+    heightCm > 250
   ) {
     throw new Response("Height must be between 90 and 250 cm", { status: 422 });
   }
-  if (!Number.isFinite(member.age) || member.age < 5 || member.age > 110) {
+  if (!Number.isFinite(age) || age === null || age < 5 || age > 110) {
     throw new Response("Age must be between 5 and 110", { status: 422 });
   }
+  if (sex !== "M" && sex !== "F") {
+    throw new Response("Sex must be M or F", { status: 422 });
+  }
   if (
-    !Number.isFinite(member.startWeightKg) ||
-    member.startWeightKg < 20 ||
-    member.startWeightKg > 300
+    !Number.isFinite(activityLevel) ||
+    activityLevel === null ||
+    activityLevel < 1 ||
+    activityLevel > 2.5
+  ) {
+    throw new Response("Activity level must be between 1 and 2.5", {
+      status: 422,
+    });
+  }
+  if (
+    !Number.isFinite(startWeightKg) ||
+    startWeightKg === null ||
+    startWeightKg < 20 ||
+    startWeightKg > 300
   ) {
     throw new Response("Starting weight must be between 20 and 300 kg", {
       status: 422,
     });
   }
   if (
-    !Number.isFinite(member.goalWeightKg) ||
-    member.goalWeightKg < 20 ||
-    member.goalWeightKg > 300
+    !Number.isFinite(goalWeightKg) ||
+    goalWeightKg === null ||
+    goalWeightKg < 20 ||
+    goalWeightKg > 300
   ) {
     throw new Response("Target weight must be between 20 and 300 kg", {
       status: 422,
     });
+  }
+  if (!targetDate || Number.isNaN(new Date(targetDate).getTime())) {
+    throw new Response("Target date must be a valid date", { status: 422 });
+  }
+  if (!units) {
+    throw new Response("Units are required", { status: 422 });
   }
 
   const { database, currentUser } = storeForWrite(headers);
@@ -756,8 +1059,9 @@ export function saveMember(headers: Headers, member: Member): Member {
       INSERT INTO members (
         id, owner_id, display_name, initials, height_cm, age, sex, activity_level,
         start_weight_kg, goal_weight_kg, target_date, units, share_details,
-        reminder_time, milestone_alerts, reset_grace_period_days, tone
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        reminder_time, milestone_alerts, reset_grace_period_days, tone,
+        profile_complete
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         owner_id = COALESCE(members.owner_id, excluded.owner_id),
         display_name = excluded.display_name,
@@ -775,6 +1079,7 @@ export function saveMember(headers: Headers, member: Member): Member {
         milestone_alerts = excluded.milestone_alerts,
         reset_grace_period_days = excluded.reset_grace_period_days,
         tone = excluded.tone,
+        profile_complete = excluded.profile_complete,
         updated_at = datetime('now')
     `)
     .run(
@@ -782,22 +1087,23 @@ export function saveMember(headers: Headers, member: Member): Member {
       ownerId,
       member.displayName,
       member.initials || initials(member.displayName),
-      member.heightCm,
-      member.age,
-      member.sex,
-      member.activityLevel,
-      member.startWeightKg,
-      member.goalWeightKg,
-      member.targetDate,
-      member.units,
+      heightCm,
+      age,
+      sex,
+      activityLevel,
+      startWeightKg,
+      goalWeightKg,
+      targetDate,
+      units,
       member.shareDetails ? 1 : 0,
       member.reminderTime,
       member.milestoneAlerts ? 1 : 0,
       member.resetGracePeriodDays,
       member.tone,
+      1,
     );
 
-  return member;
+  return { ...member, profileComplete: true };
 }
 
 export function updateMember(
@@ -805,6 +1111,8 @@ export function updateMember(
   id: string,
   patch: Partial<Member>,
 ): void {
+  validateProfilePatch(patch);
+
   const allowed: [keyof Member, string][] = [
     ["displayName", "display_name"],
     ["initials", "initials"],
@@ -852,6 +1160,7 @@ export function updateMember(
   database
     .prepare(`UPDATE members SET ${sets.join(", ")} WHERE id = ?`)
     .run(...values);
+  refreshProfileComplete(database, id);
 }
 
 export function deleteMember(headers: Headers, id: string): void {
