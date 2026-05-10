@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.0
+
+*   Migrated the add-on internals to end-to-end TypeScript with strict type
+    checks throughout the React app, the API server, and the shared library.
+*   Validated every API request and response against shared Valibot schemas so
+    invalid payloads fail fast with a clear 422 instead of corrupting state.
+*   Reorganised the server around a `createServer` factory with explicit auth
+    configuration, removing implicit dependence on the runtime environment.
+*   Added integration tests covering the HTTP API and a component test harness
+    for the React UI so future changes catch regressions earlier.
+*   No user-visible behaviour changed in this release — this is internal
+    hardening that lays the groundwork for upcoming features.
+
 ## 0.3.2
 
 *   Fixed a timezone bug that stored picked dates one day earlier than
