@@ -30,7 +30,7 @@ import {
 } from "@mantine/core";
 import { LineChart } from "@mantine/charts";
 import { DateInput as MDateInput, TimeInput as MTimeInput } from "@mantine/dates";
-import { useForm } from "@mantine/form";
+import { isNotEmpty, useForm } from "@mantine/form";
 import { useMediaQuery } from "@mantine/hooks";
 import {
   IconCheck,
@@ -1866,12 +1866,32 @@ function EntriesScreen({ me, entries, units, onEdit, onBackfill }) {
 
 // ---------- Household ----------
 // ---------- Profile ----------
+function ProfileSection({ title, subtitle, children }) {
+  return (
+    <Stack gap="sm" mb="xl">
+      <Box>
+        <Title order={2} fz={22} fw={500}>{title}</Title>
+        {subtitle && (
+          <Text c="dimmed" fz="sm" mt={4}>{subtitle}</Text>
+        )}
+      </Box>
+      <Paper withBorder radius="md" p="lg">{children}</Paper>
+    </Stack>
+  );
+}
+
 function ProfileScreen({ me, units, theme, onUpdate, onUnits, onTheme }) {
-  const [form, setForm] = useState({ ...me });
   const [savedAt, setSavedAt] = useState(null);
 
+  // useForm holds the displayed form state; auto-save patches the parent
+  // through `update()` whenever a field changes.
+  const form = useForm({
+    mode: "controlled",
+    initialValues: { ...me },
+  });
+
   function update(patch) {
-    setForm((prev) => ({ ...prev, ...patch }));
+    form.setValues((prev) => ({ ...prev, ...patch }));
     onUpdate(patch);
     setSavedAt(Date.now());
   }
@@ -1888,23 +1908,9 @@ function ProfileScreen({ me, units, theme, onUpdate, onUnits, onTheme }) {
     update({ theme: value });
   }
 
-  const goalKgDisplay = units === "imperial" ? kgToLb(form.goalWeightKg) : form.goalWeightKg;
-  const heightDisplay = units === "imperial" ? cmToIn(form.heightCm) : form.heightCm;
-  const targetDateValue = form.targetDate ? new Date(form.targetDate) : null;
-
-  function ProfileSection({ title, subtitle, children }) {
-    return (
-      <Stack gap="sm" mb="xl">
-        <Box>
-          <Title order={2} fz={22} fw={500}>{title}</Title>
-          {subtitle && (
-            <Text c="dimmed" fz="sm" mt={4}>{subtitle}</Text>
-          )}
-        </Box>
-        <Paper withBorder radius="md" p="lg">{children}</Paper>
-      </Stack>
-    );
-  }
+  const goalKgDisplay = units === "imperial" ? kgToLb(form.values.goalWeightKg) : form.values.goalWeightKg;
+  const heightDisplay = units === "imperial" ? cmToIn(form.values.heightCm) : form.values.heightCm;
+  const targetDateValue = form.values.targetDate ? new Date(form.values.targetDate) : null;
 
   return (
     <Box>
@@ -1924,7 +1930,7 @@ function ProfileScreen({ me, units, theme, onUpdate, onUnits, onTheme }) {
         <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
           <MTextInput
             label="Display name"
-            value={form.displayName ?? ""}
+            value={form.values.displayName ?? ""}
             onChange={(e) => {
               const value = e.currentTarget.value;
               update({
@@ -1950,7 +1956,7 @@ function ProfileScreen({ me, units, theme, onUpdate, onUnits, onTheme }) {
             label="Age"
             min={0}
             allowDecimal={false}
-            value={form.age ?? ""}
+            value={form.values.age ?? ""}
             onChange={(value) => {
               const num = typeof value === "number" ? value : parseInt(value, 10);
               if (!Number.isFinite(num)) return;
@@ -1959,7 +1965,7 @@ function ProfileScreen({ me, units, theme, onUpdate, onUnits, onTheme }) {
           />
           <MSelect
             label="Sex (for estimates)"
-            value={form.sex}
+            value={form.values.sex}
             onChange={(value) => value && update({ sex: value })}
             data={[
               { value: "F", label: "Female" },
@@ -1968,7 +1974,7 @@ function ProfileScreen({ me, units, theme, onUpdate, onUnits, onTheme }) {
           />
           <MSelect
             label="Activity level"
-            value={String(form.activityLevel)}
+            value={String(form.values.activityLevel)}
             onChange={(value) => value && update({ activityLevel: parseFloat(value) })}
             data={[
               { value: "1.2", label: "Sedentary" },
@@ -2034,13 +2040,13 @@ function ProfileScreen({ me, units, theme, onUpdate, onUnits, onTheme }) {
           />
           <MTimeInput
             label="Daily reminder"
-            value={form.reminderTime ?? ""}
+            value={form.values.reminderTime ?? ""}
             onChange={(e) => update({ reminderTime: e.currentTarget.value })}
           />
           <MSelect
             label="Streak grace (days)"
             description="Miss this many days and your streak resets."
-            value={String(form.resetGracePeriodDays)}
+            value={String(form.values.resetGracePeriodDays)}
             onChange={(value) => value && update({ resetGracePeriodDays: parseInt(value, 10) })}
             data={[
               { value: "0", label: "None — strict" },
@@ -2054,13 +2060,13 @@ function ProfileScreen({ me, units, theme, onUpdate, onUnits, onTheme }) {
           <MSwitch
             label="Share exact numbers in Household"
             description="Off keeps your weight, BMI and goal hidden. Streak and trend are always visible."
-            checked={!!form.shareDetails}
+            checked={!!form.values.shareDetails}
             onChange={(e) => update({ shareDetails: e.currentTarget.checked })}
           />
           <MSwitch
             label="Milestone alerts"
             description="A small celebration when you hit goal, halfway, or a 30-day streak."
-            checked={!!form.milestoneAlerts}
+            checked={!!form.values.milestoneAlerts}
             onChange={(e) => update({ milestoneAlerts: e.currentTarget.checked })}
           />
         </Stack>
@@ -2294,10 +2300,18 @@ function MilestoneModal({ kind, member, onSetNewGoal, onMaintain, onClose }) {
 }
 
 // ---------- First-run ----------
+const STEP_FIELDS = {
+  1: ["displayName", "units", "height", "age", "sex", "activityLevel"],
+  2: ["startWeight", "goalWeight", "targetDate"],
+};
+
+const isPositiveNumber = (message) => (value) => {
+  const num = typeof value === "number" ? value : parseFloat(value);
+  return Number.isFinite(num) && num > 0 ? null : message;
+};
+
 function FirstRun({ profile, onDone }) {
   const [step, setStep] = useState(0);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState(null);
 
   const form = useForm({
     mode: "controlled",
@@ -2312,53 +2326,64 @@ function FirstRun({ profile, onDone }) {
       goalWeight: profile?.goalWeightKg ?? "",
       targetDate: profile?.targetDate ? new Date(profile.targetDate) : null,
     },
+    validate: {
+      displayName: isNotEmpty("Required"),
+      units: isNotEmpty("Pick units"),
+      height: isPositiveNumber("Required"),
+      age: isPositiveNumber("Required"),
+      sex: isNotEmpty("Required"),
+      activityLevel: isNotEmpty("Required"),
+      startWeight: isPositiveNumber("Required"),
+      goalWeight: isPositiveNumber("Required"),
+      targetDate: (value) =>
+        value instanceof Date && !Number.isNaN(value.getTime())
+          ? null
+          : "Pick a date",
+    },
   });
 
   const usingImperial = form.values.units === "imperial";
-  const isNum = (v) => Number.isFinite(typeof v === "number" ? v : parseFloat(v));
 
-  const aboutComplete =
-    Boolean(form.values.displayName.trim()) &&
-    Boolean(form.values.units) &&
-    isNum(form.values.height) &&
-    isNum(form.values.age) &&
-    Boolean(form.values.sex) &&
-    Boolean(form.values.activityLevel);
+  function continueToStep(nextStep) {
+    const fields = STEP_FIELDS[step];
+    const results = fields.map((f) => form.validateField(f));
+    if (!results.some((r) => r.hasError)) {
+      setStep(nextStep);
+    }
+  }
 
-  const startComplete =
-    isNum(form.values.startWeight) &&
-    isNum(form.values.goalWeight) &&
-    form.values.targetDate instanceof Date;
-
-  async function complete() {
-    setSubmitError(null);
-    setSubmitting(true);
+  async function handleSubmit(values) {
+    const heightNum =
+      typeof values.height === "number" ? values.height : parseFloat(values.height);
+    const startNum =
+      typeof values.startWeight === "number"
+        ? values.startWeight
+        : parseFloat(values.startWeight);
+    const goalNum =
+      typeof values.goalWeight === "number"
+        ? values.goalWeight
+        : parseFloat(values.goalWeight);
+    const heightCm = usingImperial ? heightNum / CM_TO_IN : heightNum;
+    const startKg = usingImperial ? lbToKg(startNum) : startNum;
+    const goalKg = usingImperial ? lbToKg(goalNum) : goalNum;
+    const target = new Date(values.targetDate);
+    target.setHours(8, 0, 0, 0);
     try {
-      const v = form.values;
-      const heightNum = typeof v.height === "number" ? v.height : parseFloat(v.height);
-      const startNum = typeof v.startWeight === "number" ? v.startWeight : parseFloat(v.startWeight);
-      const goalNum = typeof v.goalWeight === "number" ? v.goalWeight : parseFloat(v.goalWeight);
-      const heightCm = usingImperial ? heightNum / CM_TO_IN : heightNum;
-      const startKg = usingImperial ? lbToKg(startNum) : startNum;
-      const goalKg = usingImperial ? lbToKg(goalNum) : goalNum;
-      const target = new Date(v.targetDate);
-      target.setHours(8, 0, 0, 0);
       await onDone({
-        displayName: v.displayName.trim(),
-        initials: v.displayName.trim().slice(0, 2).toUpperCase(),
+        displayName: values.displayName.trim(),
+        initials: values.displayName.trim().slice(0, 2).toUpperCase(),
         heightCm: Math.round(heightCm * 10) / 10,
-        age: parseInt(v.age, 10),
-        sex: v.sex,
-        activityLevel: parseFloat(v.activityLevel),
+        age: parseInt(values.age, 10),
+        sex: values.sex,
+        activityLevel: parseFloat(values.activityLevel),
         startWeightKg: Math.round(startKg * 10) / 10,
         goalWeightKg: Math.round(goalKg * 10) / 10,
         targetDate: target.toISOString(),
-        units: v.units,
+        units: values.units,
       });
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Could not save profile.");
-    } finally {
-      setSubmitting(false);
+      const message = err instanceof Error ? err.message : "Could not save profile.";
+      form.setFieldError("targetDate", message);
     }
   }
 
@@ -2397,117 +2422,121 @@ function FirstRun({ profile, onDone }) {
           </Stack>
         )}
 
-        {step === 1 && (
-          <Stack gap="lg">
-            <Box>
-              <Title order={1} fz={28} fw={400}>About you</Title>
-              <Text c="dimmed" fz="sm" mt={4}>
-                Used only to estimate your derived stats.
-              </Text>
-            </Box>
-            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-              <MTextInput
-                label="Display name"
-                placeholder="Display name"
-                {...form.getInputProps("displayName")}
-              />
-              <MSelect
-                label="Units"
-                placeholder="Select units"
-                data={[
-                  { value: "metric", label: "Metric" },
-                  { value: "imperial", label: "Imperial" },
-                ]}
-                {...form.getInputProps("units")}
-              />
-              <NumberInput
-                label={usingImperial ? "Height (in)" : "Height (cm)"}
-                min={0}
-                {...form.getInputProps("height")}
-              />
-              <NumberInput
-                label="Age"
-                min={0}
-                allowDecimal={false}
-                {...form.getInputProps("age")}
-              />
-              <MSelect
-                label="Sex (for estimates)"
-                placeholder="Select"
-                data={[
-                  { value: "F", label: "Female" },
-                  { value: "M", label: "Male" },
-                ]}
-                {...form.getInputProps("sex")}
-              />
-              <MSelect
-                label="Activity level"
-                placeholder="Select activity"
-                data={[
-                  { value: "1.2", label: "Sedentary" },
-                  { value: "1.4", label: "Light" },
-                  { value: "1.55", label: "Moderate" },
-                  { value: "1.7", label: "Active" },
-                  { value: "1.9", label: "Very active" },
-                ]}
-                {...form.getInputProps("activityLevel")}
-              />
-            </SimpleGrid>
-            <Group justify="space-between" mt="md">
-              <Button variant="subtle" onClick={() => setStep(0)}>Back</Button>
-              <Button disabled={!aboutComplete} onClick={() => setStep(2)}>
-                Continue
-              </Button>
-            </Group>
-          </Stack>
-        )}
-
-        {step === 2 && (
-          <Stack gap="lg">
-            <Box>
-              <Title order={1} fz={28} fw={400}>Where you're starting</Title>
-              <Text c="dimmed" fz="sm" mt={4}>
-                These fields are required before the dashboard can calculate progress.
-              </Text>
-            </Box>
-            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-              <NumberInput
-                label={usingImperial ? "Today's weight (lb)" : "Today's weight (kg)"}
-                min={0}
-                step={0.1}
-                decimalScale={1}
-                {...form.getInputProps("startWeight")}
-              />
-              <NumberInput
-                label={usingImperial ? "Target weight (lb)" : "Target weight (kg)"}
-                min={0}
-                step={0.1}
-                decimalScale={1}
-                {...form.getInputProps("goalWeight")}
-              />
-              <MDateInput
-                label="Target date"
-                placeholder="Pick a date"
-                clearable
-                {...form.getInputProps("targetDate")}
-              />
-            </SimpleGrid>
-            {submitError && (
-              <Text c="red" fz="sm">{submitError}</Text>
+        {step > 0 && (
+          <form onSubmit={form.onSubmit(handleSubmit)}>
+            {step === 1 && (
+              <Stack gap="lg">
+                <Box>
+                  <Title order={1} fz={28} fw={400}>About you</Title>
+                  <Text c="dimmed" fz="sm" mt={4}>
+                    Used only to estimate your derived stats.
+                  </Text>
+                </Box>
+                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+                  <MTextInput
+                    label="Display name"
+                    placeholder="Display name"
+                    {...form.getInputProps("displayName")}
+                  />
+                  <MSelect
+                    label="Units"
+                    placeholder="Select units"
+                    data={[
+                      { value: "metric", label: "Metric" },
+                      { value: "imperial", label: "Imperial" },
+                    ]}
+                    {...form.getInputProps("units")}
+                  />
+                  <NumberInput
+                    label={usingImperial ? "Height (in)" : "Height (cm)"}
+                    min={0}
+                    {...form.getInputProps("height")}
+                  />
+                  <NumberInput
+                    label="Age"
+                    min={0}
+                    allowDecimal={false}
+                    {...form.getInputProps("age")}
+                  />
+                  <MSelect
+                    label="Sex (for estimates)"
+                    placeholder="Select"
+                    data={[
+                      { value: "F", label: "Female" },
+                      { value: "M", label: "Male" },
+                    ]}
+                    {...form.getInputProps("sex")}
+                  />
+                  <MSelect
+                    label="Activity level"
+                    placeholder="Select activity"
+                    data={[
+                      { value: "1.2", label: "Sedentary" },
+                      { value: "1.4", label: "Light" },
+                      { value: "1.55", label: "Moderate" },
+                      { value: "1.7", label: "Active" },
+                      { value: "1.9", label: "Very active" },
+                    ]}
+                    {...form.getInputProps("activityLevel")}
+                  />
+                </SimpleGrid>
+                <Group justify="space-between" mt="md">
+                  <Button variant="subtle" type="button" onClick={() => setStep(0)}>
+                    Back
+                  </Button>
+                  <Button type="button" onClick={() => continueToStep(2)}>
+                    Continue
+                  </Button>
+                </Group>
+              </Stack>
             )}
-            <Group justify="space-between" mt="md">
-              <Button variant="subtle" onClick={() => setStep(1)} disabled={submitting}>
-                Back
-              </Button>
-              <Button
-                disabled={!startComplete}
-                loading={submitting}
-                onClick={complete}
-              >
-                Begin tracking
-              </Button>
-            </Group>
-          </Stack>
+
+            {step === 2 && (
+              <Stack gap="lg">
+                <Box>
+                  <Title order={1} fz={28} fw={400}>Where you're starting</Title>
+                  <Text c="dimmed" fz="sm" mt={4}>
+                    These fields are required before the dashboard can calculate progress.
+                  </Text>
+                </Box>
+                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+                  <NumberInput
+                    label={usingImperial ? "Today's weight (lb)" : "Today's weight (kg)"}
+                    min={0}
+                    step={0.1}
+                    decimalScale={1}
+                    {...form.getInputProps("startWeight")}
+                  />
+                  <NumberInput
+                    label={usingImperial ? "Target weight (lb)" : "Target weight (kg)"}
+                    min={0}
+                    step={0.1}
+                    decimalScale={1}
+                    {...form.getInputProps("goalWeight")}
+                  />
+                  <MDateInput
+                    label="Target date"
+                    placeholder="Pick a date"
+                    clearable
+                    {...form.getInputProps("targetDate")}
+                  />
+                </SimpleGrid>
+                <Group justify="space-between" mt="md">
+                  <Button
+                    variant="subtle"
+                    type="button"
+                    onClick={() => setStep(1)}
+                    disabled={form.submitting}
+                  >
+                    Back
+                  </Button>
+                  <Button type="submit" loading={form.submitting}>
+                    Begin tracking
+                  </Button>
+                </Group>
+              </Stack>
+            )}
+          </form>
         )}
       </Paper>
     </Center>
@@ -2521,10 +2550,13 @@ Object.assign(window, { LogWeightModal, MilestoneModal, FirstRun });
 // features.jsx — weekly digest, add-member, first-of-month recap, empty states.
 
 // ---------- Weekly Digest ----------
+const ADD_MEMBER_STEP_FIELDS = {
+  0: ["displayName", "units", "heightCm", "age", "sex", "activityLevel"],
+  1: ["startWeightKg", "goalWeightKg", "targetDate"],
+};
+
 function AddMemberModal({ onAdd, onClose }) {
   const [step, setStep] = useState(0);
-  const [error, setError] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
 
   const form = useForm({
     mode: "controlled",
@@ -2541,75 +2573,77 @@ function AddMemberModal({ onAdd, onClose }) {
       colorIdx: 2,
       shareDetails: false,
     },
+    validate: {
+      displayName: isNotEmpty("Please enter a name"),
+      units: isNotEmpty("Pick units"),
+      sex: isNotEmpty("Pick sex"),
+      activityLevel: isNotEmpty("Pick activity level"),
+      heightCm: (value, values) => {
+        const num = typeof value === "number" ? value : parseFloat(value);
+        if (!Number.isFinite(num)) return "Required";
+        const minHeight = values.units === "imperial" ? 36 : 90;
+        return num < minHeight ? "Please enter a sensible height" : null;
+      },
+      age: (value) => {
+        const num = typeof value === "number" ? value : parseFloat(value);
+        if (!Number.isFinite(num)) return "Required";
+        return num < 5 || num > 110 ? "Please enter a sensible age" : null;
+      },
+      startWeightKg: isPositiveNumber("Required"),
+      goalWeightKg: isPositiveNumber("Required"),
+      targetDate: (value) =>
+        value instanceof Date && !Number.isNaN(value.getTime())
+          ? null
+          : "Pick a target date",
+    },
   });
 
   const v = form.values;
-  const isNum = (val) =>
-    Number.isFinite(typeof val === "number" ? val : parseFloat(val));
 
-  function validateBasics() {
-    if (!v.displayName.trim()) return "Please enter a name.";
-    if (!v.units) return "Please select units.";
-    const minHeight = v.units === "imperial" ? 36 : 90;
-    if (!isNum(v.heightCm) || parseFloat(v.heightCm) < minHeight)
-      return "Please enter a height.";
-    const ageNum = parseFloat(v.age);
-    if (!isNum(v.age) || ageNum < 5 || ageNum > 110)
-      return "Please enter a sensible age.";
-    if (!v.sex) return "Please select sex.";
-    if (!v.activityLevel) return "Please select activity level.";
-    return null;
-  }
-
-  function validateWeights() {
-    if (!isNum(v.startWeightKg)) return "Please enter today's weight.";
-    if (!isNum(v.goalWeightKg)) return "Please enter a target weight.";
-    if (!(v.targetDate instanceof Date)) return "Please select a target date.";
-    return null;
-  }
-
-  async function commit() {
-    setError(null);
-    const err = validateBasics() || validateWeights();
-    if (err) {
-      setError(err);
-      return;
+  function continueToStep(nextStep) {
+    const fields = ADD_MEMBER_STEP_FIELDS[step];
+    const results = fields.map((f) => form.validateField(f));
+    if (!results.some((r) => r.hasError)) {
+      setStep(nextStep);
     }
-    setSubmitting(true);
+  }
+
+  async function handleSubmit(values) {
+    const heightNum =
+      typeof values.heightCm === "number"
+        ? values.heightCm
+        : parseFloat(values.heightCm);
+    const startNum =
+      typeof values.startWeightKg === "number"
+        ? values.startWeightKg
+        : parseFloat(values.startWeightKg);
+    const goalNum =
+      typeof values.goalWeightKg === "number"
+        ? values.goalWeightKg
+        : parseFloat(values.goalWeightKg);
+    const heightCm = values.units === "imperial" ? heightNum / CM_TO_IN : heightNum;
+    const startKg = values.units === "imperial" ? lbToKg(startNum) : startNum;
+    const goalKg = values.units === "imperial" ? lbToKg(goalNum) : goalNum;
+    const target = new Date(values.targetDate);
+    target.setHours(8, 0, 0, 0);
     try {
-      const heightNum =
-        typeof v.heightCm === "number" ? v.heightCm : parseFloat(v.heightCm);
-      const startNum =
-        typeof v.startWeightKg === "number"
-          ? v.startWeightKg
-          : parseFloat(v.startWeightKg);
-      const goalNum =
-        typeof v.goalWeightKg === "number"
-          ? v.goalWeightKg
-          : parseFloat(v.goalWeightKg);
-      const heightCm = v.units === "imperial" ? heightNum / CM_TO_IN : heightNum;
-      const startKg = v.units === "imperial" ? lbToKg(startNum) : startNum;
-      const goalKg = v.units === "imperial" ? lbToKg(goalNum) : goalNum;
-      const target = new Date(v.targetDate);
-      target.setHours(8, 0, 0, 0);
       await onAdd({
-        displayName: v.displayName.trim(),
-        initials: v.displayName.trim().slice(0, 2).toUpperCase(),
-        sex: v.sex,
-        age: parseInt(v.age, 10),
+        displayName: values.displayName.trim(),
+        initials: values.displayName.trim().slice(0, 2).toUpperCase(),
+        sex: values.sex,
+        age: parseInt(values.age, 10),
         heightCm: Math.round(heightCm * 10) / 10,
-        activityLevel: parseFloat(v.activityLevel),
+        activityLevel: parseFloat(values.activityLevel),
         startWeightKg: Math.round(startKg * 10) / 10,
         goalWeightKg: Math.round(goalKg * 10) / 10,
         targetDate: target.toISOString(),
-        colorIdx: v.colorIdx,
-        shareDetails: v.shareDetails,
-        units: v.units,
+        colorIdx: values.colorIdx,
+        shareDetails: values.shareDetails,
+        units: values.units,
       });
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not add member.");
-    } finally {
-      setSubmitting(false);
+      const message = caught instanceof Error ? caught.message : "Could not add member.";
+      form.setFieldError("targetDate", message);
     }
   }
 
@@ -2623,156 +2657,154 @@ function AddMemberModal({ onAdd, onClose }) {
       size="lg"
       title="New household member"
     >
-      {step === 0 && (
-        <Stack gap="md">
-          <MTextInput
-            label="Display name"
-            placeholder="Casey"
-            data-autofocus
-            {...form.getInputProps("displayName")}
-          />
-          <Box>
-            <Text fz="sm" fw={500} mb={6}>Avatar tint</Text>
-            <Group gap="sm">
-              {palette.map((i) => (
-                <UnstyledButton
-                  key={i}
-                  aria-label={`Tint ${i + 1}`}
-                  aria-pressed={v.colorIdx === i}
-                  onClick={() => form.setFieldValue("colorIdx", i)}
-                  style={{ borderRadius: 9999 }}
-                >
-                  <ColorSwatch
-                    color={AVATAR_COLORS[i]}
-                    size={36}
-                    withShadow={false}
-                    style={{
-                      cursor: "pointer",
-                      outline:
-                        v.colorIdx === i
-                          ? "2px solid var(--mantine-color-text)"
-                          : "2px solid transparent",
-                      outlineOffset: 2,
-                    }}
-                  />
-                </UnstyledButton>
-              ))}
-            </Group>
-          </Box>
-          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+      <form onSubmit={form.onSubmit(handleSubmit)}>
+        {step === 0 && (
+          <Stack gap="md">
+            <MTextInput
+              label="Display name"
+              placeholder="Casey"
+              data-autofocus
+              {...form.getInputProps("displayName")}
+            />
+            <Box>
+              <Text fz="sm" fw={500} mb={6}>Avatar tint</Text>
+              <Group gap="sm">
+                {palette.map((i) => (
+                  <UnstyledButton
+                    key={i}
+                    type="button"
+                    aria-label={`Tint ${i + 1}`}
+                    aria-pressed={v.colorIdx === i}
+                    onClick={() => form.setFieldValue("colorIdx", i)}
+                    style={{ borderRadius: 9999 }}
+                  >
+                    <ColorSwatch
+                      color={AVATAR_COLORS[i]}
+                      size={36}
+                      withShadow={false}
+                      style={{
+                        cursor: "pointer",
+                        outline:
+                          v.colorIdx === i
+                            ? "2px solid var(--mantine-color-text)"
+                            : "2px solid transparent",
+                        outlineOffset: 2,
+                      }}
+                    />
+                  </UnstyledButton>
+                ))}
+              </Group>
+            </Box>
+            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+              <NumberInput
+                label="Age"
+                min={0}
+                allowDecimal={false}
+                {...form.getInputProps("age")}
+              />
+              <MSelect
+                label="Sex (for estimates)"
+                placeholder="Select"
+                data={[
+                  { value: "F", label: "Female" },
+                  { value: "M", label: "Male" },
+                ]}
+                {...form.getInputProps("sex")}
+              />
+            </SimpleGrid>
+            <MSelect
+              label="Units"
+              placeholder="Select units"
+              data={[
+                { value: "metric", label: "Metric (kg, cm)" },
+                { value: "imperial", label: "Imperial (lb, in)" },
+              ]}
+              {...form.getInputProps("units")}
+            />
             <NumberInput
-              label="Age"
+              label={v.units === "imperial" ? "Height (in)" : "Height (cm)"}
               min={0}
-              allowDecimal={false}
-              {...form.getInputProps("age")}
+              step={0.1}
+              decimalScale={1}
+              {...form.getInputProps("heightCm")}
             />
             <MSelect
-              label="Sex (for estimates)"
-              placeholder="Select"
+              label="Activity level"
+              placeholder="Select activity"
               data={[
-                { value: "F", label: "Female" },
-                { value: "M", label: "Male" },
+                { value: "1.2", label: "Sedentary" },
+                { value: "1.4", label: "Light" },
+                { value: "1.55", label: "Moderate" },
+                { value: "1.7", label: "Active" },
+                { value: "1.9", label: "Very active" },
               ]}
-              {...form.getInputProps("sex")}
+              {...form.getInputProps("activityLevel")}
             />
-          </SimpleGrid>
-          <MSelect
-            label="Units"
-            placeholder="Select units"
-            data={[
-              { value: "metric", label: "Metric (kg, cm)" },
-              { value: "imperial", label: "Imperial (lb, in)" },
-            ]}
-            {...form.getInputProps("units")}
-          />
-          <NumberInput
-            label={v.units === "imperial" ? "Height (in)" : "Height (cm)"}
-            min={0}
-            step={0.1}
-            decimalScale={1}
-            {...form.getInputProps("heightCm")}
-          />
-          <MSelect
-            label="Activity level"
-            placeholder="Select activity"
-            data={[
-              { value: "1.2", label: "Sedentary" },
-              { value: "1.4", label: "Light" },
-              { value: "1.55", label: "Moderate" },
-              { value: "1.7", label: "Active" },
-              { value: "1.9", label: "Very active" },
-            ]}
-            {...form.getInputProps("activityLevel")}
-          />
-          {error && <Text c="red" fz="sm">{error}</Text>}
-          <Group justify="space-between" mt="sm">
-            <Button variant="subtle" onClick={onClose}>Cancel</Button>
-            <Button
-              onClick={() => {
-                const err = validateBasics();
-                if (err) {
-                  setError(err);
-                  return;
-                }
-                setError(null);
-                setStep(1);
-              }}
-            >
-              Continue
-            </Button>
-          </Group>
-        </Stack>
-      )}
+            <Group justify="space-between" mt="sm">
+              <Button variant="subtle" type="button" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="button" onClick={() => continueToStep(1)}>
+                Continue
+              </Button>
+            </Group>
+          </Stack>
+        )}
 
-      {step === 1 && (
-        <Stack gap="md">
-          <Text c="dimmed" fz="sm">
-            Add a starting point and target so progress cards have real context.
-          </Text>
-          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-            <NumberInput
-              label={v.units === "imperial" ? "Today's weight (lb)" : "Today's weight (kg)"}
-              placeholder="—"
-              min={0}
-              step={0.1}
-              decimalScale={1}
-              {...form.getInputProps("startWeightKg")}
+        {step === 1 && (
+          <Stack gap="md">
+            <Text c="dimmed" fz="sm">
+              Add a starting point and target so progress cards have real context.
+            </Text>
+            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+              <NumberInput
+                label={v.units === "imperial" ? "Today's weight (lb)" : "Today's weight (kg)"}
+                placeholder="—"
+                min={0}
+                step={0.1}
+                decimalScale={1}
+                {...form.getInputProps("startWeightKg")}
+              />
+              <NumberInput
+                label={v.units === "imperial" ? "Target weight (lb)" : "Target weight (kg)"}
+                placeholder="—"
+                min={0}
+                step={0.1}
+                decimalScale={1}
+                {...form.getInputProps("goalWeightKg")}
+              />
+              <MDateInput
+                label="Target date"
+                placeholder="Pick a date"
+                clearable
+                {...form.getInputProps("targetDate")}
+              />
+            </SimpleGrid>
+            <MSwitch
+              label="Share exact numbers in Household"
+              description="Off by default. Each member can change this themselves later."
+              {...form.getInputProps("shareDetails", { type: "checkbox" })}
             />
-            <NumberInput
-              label={v.units === "imperial" ? "Target weight (lb)" : "Target weight (kg)"}
-              placeholder="—"
-              min={0}
-              step={0.1}
-              decimalScale={1}
-              {...form.getInputProps("goalWeightKg")}
-            />
-            <MDateInput
-              label="Target date"
-              placeholder="Pick a date"
-              clearable
-              {...form.getInputProps("targetDate")}
-            />
-          </SimpleGrid>
-          <MSwitch
-            label="Share exact numbers in Household"
-            description="Off by default. Each member can change this themselves later."
-            {...form.getInputProps("shareDetails", { type: "checkbox" })}
-          />
-          {error && <Text c="red" fz="sm">{error}</Text>}
-          <Group justify="space-between" mt="sm">
-            <Button variant="subtle" onClick={() => setStep(0)} disabled={submitting}>
-              Back
-            </Button>
-            <Button
-              onClick={commit}
-              loading={submitting}
-              leftSection={<IconCheck size={16} />}
-            >
-              Add to household
-            </Button>
-          </Group>
-        </Stack>
-      )}
+            <Group justify="space-between" mt="sm">
+              <Button
+                variant="subtle"
+                type="button"
+                onClick={() => setStep(0)}
+                disabled={form.submitting}
+              >
+                Back
+              </Button>
+              <Button
+                type="submit"
+                loading={form.submitting}
+                leftSection={<IconCheck size={16} />}
+              >
+                Add to household
+              </Button>
+            </Group>
+          </Stack>
+        )}
+      </form>
     </MModal>
   );
 }
