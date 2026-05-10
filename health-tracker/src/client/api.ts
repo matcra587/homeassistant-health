@@ -13,14 +13,15 @@ async function request<T = unknown>(
   path: string,
   options: ApiRequestOptions = {},
 ): Promise<T | null> {
-  const response = await fetch(apiUrl(path), {
-    method: options.method,
+  const init: RequestInit = {
     headers: {
       "content-type": "application/json",
       ...(options.headers ?? {}),
     },
-    body: options.body == null ? undefined : JSON.stringify(options.body),
-  });
+  };
+  if (options.method) init.method = options.method;
+  if (options.body != null) init.body = JSON.stringify(options.body);
+  const response = await fetch(apiUrl(path), init);
   if (!response.ok) {
     const message = await response.text();
     throw new Error(message || `Request failed: ${response.status}`);

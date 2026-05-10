@@ -1,5 +1,6 @@
 import { serve } from "bun";
 import { getHealthStatus, getReadinessStatus } from "../lib/health";
+import type { Member } from "../lib/types";
 import index from "./index.html";
 import {
   EntryDeleteSchema,
@@ -118,7 +119,11 @@ const server = serve({
           MemberPatchRequestSchema,
           await readJson(request),
         );
-        updateMember(request.headers, id, patch);
+        // Schema infers `{ id?: string | undefined }`; Partial<Member> with
+        // exactOptionalPropertyTypes wants `{ id?: string }`. Structurally
+        // identical at runtime — cast at the boundary instead of widening
+        // the upstream type.
+        updateMember(request.headers, id, patch as Partial<Member>);
         return noContent();
       }),
       DELETE: route(async (request) => {

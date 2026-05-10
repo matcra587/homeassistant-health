@@ -84,7 +84,7 @@ test("bootstraps a Home Assistant user without demo household seed data", () => 
 });
 
 test("uses a single development user when ingress headers are missing outside production", () => {
-  const originalNodeEnv = Bun.env.NODE_ENV;
+  const originalNodeEnv = Bun.env.NODE_ENV ?? "";
   Bun.env.NODE_ENV = "development";
 
   try {
@@ -144,7 +144,7 @@ test("rejects entries until the member profile is complete", async () => {
 });
 
 test("rejects missing ingress headers in production", async () => {
-  const originalNodeEnv = Bun.env.NODE_ENV;
+  const originalNodeEnv = Bun.env.NODE_ENV ?? "";
   Bun.env.NODE_ENV = "production";
 
   try {

@@ -30,7 +30,7 @@ export function Stat({ label, value, tone, dim, suffix }: StatProps) {
         fw={500}
         mt={4}
         lh={1.15}
-        c={color}
+        {...(color ? { c: color } : {})}
         style={{ fontVariantNumeric: "tabular-nums" }}
       >
         {value}

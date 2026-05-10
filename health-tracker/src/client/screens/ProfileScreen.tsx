@@ -197,7 +197,7 @@ export function ProfileScreen({
         <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
           <Select
             label="Units"
-            value={units}
+            value={units ?? null}
             onChange={updateUnits}
             data={[
               { value: "metric", label: "Metric (kg, cm)" },
