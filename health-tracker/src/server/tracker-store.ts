@@ -18,6 +18,66 @@ type CurrentUser = {
   fromHomeAssistant: boolean;
 };
 
+// SQLite stores everything as TEXT/INTEGER/REAL. These row shapes describe
+// what we expect each column to come back as so that toMember/toEntry/etc.
+// can do the narrowing in one place.
+type MemberRow = {
+  id: string;
+  display_name: string;
+  initials: string;
+  height_cm: number | null;
+  age: number | null;
+  sex: string | null;
+  activity_level: number | null;
+  start_weight_kg: number | null;
+  goal_weight_kg: number | null;
+  target_date: string | null;
+  units: string | null;
+  theme: string;
+  share_details: number;
+  reminder_time: string;
+  milestone_alerts: number;
+  reset_grace_period_days: number;
+  tone: string;
+  profile_complete: number;
+  owner_id: string | null;
+};
+
+type EntryRow = {
+  id: string;
+  member_id: string;
+  date: string;
+  weight_kg: number;
+  body_fat_pct: number | null;
+  waist_cm: number | null;
+  note: string | null;
+};
+
+type MemberAccessRow = {
+  id: string;
+  owner_id: string | null;
+  profile_complete: number;
+};
+
+type HouseholdRow = {
+  id: string;
+  name: string;
+  created_at: string;
+  locale: string;
+};
+
+type MemberIdRow = { member_id: string };
+type CountRow = { count: number };
+type ColumnInfoRow = { name: string; notnull: number };
+type CsvExportRow = {
+  display_name: string;
+  date: string;
+  weight_kg: number;
+  body_fat_pct: number | null;
+  waist_cm: number | null;
+  note: string | null;
+};
+
 const DAY = 86_400_000;
 const DEV_USER = {
   id: "dev-user-001",
@@ -149,10 +209,9 @@ function initSchema(database: Database): void {
 }
 
 function migrateSchema(database: Database): void {
-  const columns = database.prepare("PRAGMA table_info(members)").all() as {
-    name: string;
-    notnull: number;
-  }[];
+  const columns = database
+    .prepare<ColumnInfoRow, []>("PRAGMA table_info(members)")
+    .all();
   const columnNames = new Set(columns.map((column) => column.name));
   if (!columns.some((column) => column.name === "owner_id")) {
     database.exec("ALTER TABLE members ADD COLUMN owner_id TEXT");
@@ -502,9 +561,9 @@ function ensureHousehold(database: Database): void {
 
 function ensureSeeded(database: Database, currentUser: CurrentUser): void {
   const row = database
-    .prepare("SELECT COUNT(*) AS count FROM members")
-    .get() as { count: number };
-  if (row.count > 0) {
+    .prepare<CountRow, []>("SELECT COUNT(*) AS count FROM members")
+    .get();
+  if (row && row.count > 0) {
     return;
   }
 
@@ -611,42 +670,39 @@ function ensureCurrentMember(
     );
 }
 
-function toMember(row: Record<string, unknown>, currentUserId: string): Member {
+function toMember(row: MemberRow, currentUserId: string): Member {
   return {
-    id: String(row.id),
-    displayName: String(row.display_name),
-    initials: String(row.initials),
-    heightCm: row.height_cm == null ? null : Number(row.height_cm),
-    age: row.age == null ? null : Number(row.age),
+    id: row.id,
+    displayName: row.display_name,
+    initials: row.initials,
+    heightCm: row.height_cm,
+    age: row.age,
     sex: row.sex == null ? null : (row.sex as Sex),
-    activityLevel:
-      row.activity_level == null ? null : Number(row.activity_level),
-    startWeightKg:
-      row.start_weight_kg == null ? null : Number(row.start_weight_kg),
-    goalWeightKg:
-      row.goal_weight_kg == null ? null : Number(row.goal_weight_kg),
-    targetDate: row.target_date == null ? null : String(row.target_date),
+    activityLevel: row.activity_level,
+    startWeightKg: row.start_weight_kg,
+    goalWeightKg: row.goal_weight_kg,
+    targetDate: row.target_date,
     units: row.units == null ? null : (row.units as Units),
     theme: row.theme === "light" || row.theme === "dark" ? row.theme : "system",
     shareDetails: bool(row.share_details),
-    reminderTime: String(row.reminder_time),
+    reminderTime: row.reminder_time,
     milestoneAlerts: bool(row.milestone_alerts),
-    resetGracePeriodDays: Number(row.reset_grace_period_days),
+    resetGracePeriodDays: row.reset_grace_period_days,
     isMe: row.id === currentUserId,
-    tone: String(row.tone),
+    tone: row.tone,
     profileComplete: bool(row.profile_complete),
   };
 }
 
-function toEntry(row: Record<string, unknown>): Entry {
+function toEntry(row: EntryRow): Entry {
   return {
-    id: String(row.id),
-    memberId: String(row.member_id),
-    date: String(row.date),
-    weightKg: Number(row.weight_kg),
-    bodyFatPct: row.body_fat_pct == null ? null : Number(row.body_fat_pct),
-    waistCm: row.waist_cm == null ? null : Number(row.waist_cm),
-    note: row.note == null ? null : String(row.note),
+    id: row.id,
+    memberId: row.member_id,
+    date: row.date,
+    weightKg: row.weight_kg,
+    bodyFatPct: row.body_fat_pct,
+    waistCm: row.waist_cm,
+    note: row.note,
   };
 }
 
@@ -655,16 +711,18 @@ function getMemberAccess(
   memberId: string,
 ): MemberAccess | null {
   const row = database
-    .prepare("SELECT id, owner_id, profile_complete FROM members WHERE id = ?")
-    .get(memberId) as Record<string, unknown> | undefined;
+    .prepare<MemberAccessRow, [string]>(
+      "SELECT id, owner_id, profile_complete FROM members WHERE id = ?",
+    )
+    .get(memberId);
 
   if (!row) {
     return null;
   }
 
   return {
-    id: String(row.id),
-    ownerId: row.owner_id == null ? null : String(row.owner_id),
+    id: row.id,
+    ownerId: row.owner_id,
     profileComplete: bool(row.profile_complete),
   };
 }
@@ -823,8 +881,8 @@ function requireCompleteProfile(member: MemberAccess): void {
 
 function listMembers(database: Database, currentUserId: string): Member[] {
   const rows = database
-    .prepare("SELECT * FROM members ORDER BY created_at, id")
-    .all() as Record<string, unknown>[];
+    .prepare<MemberRow, []>("SELECT * FROM members ORDER BY created_at, id")
+    .all();
   const members = rows.map((row) => toMember(row, currentUserId));
   if (!members.some((member) => member.isMe) && members[0]) {
     members[0].isMe = true;
@@ -835,13 +893,13 @@ function listMembers(database: Database, currentUserId: string): Member[] {
 function listEntries(database: Database, currentUser: CurrentUser): Entry[] {
   if (!currentUser.fromHomeAssistant) {
     const rows = database
-      .prepare("SELECT * FROM entries ORDER BY date DESC")
-      .all() as Record<string, unknown>[];
+      .prepare<EntryRow, []>("SELECT * FROM entries ORDER BY date DESC")
+      .all();
     return rows.map(toEntry);
   }
 
   const rows = database
-    .prepare(`
+    .prepare<EntryRow, [string, string]>(`
       SELECT entries.*
       FROM entries
       JOIN members ON members.id = entries.member_id
@@ -850,14 +908,14 @@ function listEntries(database: Database, currentUser: CurrentUser): Entry[] {
         OR members.share_details = 1
       ORDER BY entries.date DESC
     `)
-    .all(currentUser.id, currentUser.id) as Record<string, unknown>[];
+    .all(currentUser.id, currentUser.id);
   return rows.map(toEntry);
 }
 
 function household(database: Database): Household {
   const row = database
-    .prepare("SELECT * FROM household WHERE id = ?")
-    .get("h1") as Record<string, unknown> | undefined;
+    .prepare<HouseholdRow, [string]>("SELECT * FROM household WHERE id = ?")
+    .get("h1");
 
   if (!row) {
     return {
@@ -869,10 +927,10 @@ function household(database: Database): Household {
   }
 
   return {
-    id: String(row.id),
-    name: String(row.name),
-    createdAt: String(row.created_at),
-    locale: String(row.locale),
+    id: row.id,
+    name: row.name,
+    createdAt: row.created_at,
+    locale: row.locale,
   };
 }
 
@@ -912,8 +970,10 @@ export function saveEntry(headers: Headers, entry: Entry): Entry {
 
   const { database, currentUser } = storeForWrite(headers);
   const existingEntry = database
-    .prepare("SELECT member_id FROM entries WHERE id = ?")
-    .get(entry.id) as { member_id: string } | undefined;
+    .prepare<MemberIdRow, [string]>(
+      "SELECT member_id FROM entries WHERE id = ?",
+    )
+    .get(entry.id);
   if (existingEntry) {
     requireMemberWriteAccess(database, currentUser, existingEntry.member_id);
   }
@@ -959,8 +1019,10 @@ export function saveEntry(headers: Headers, entry: Entry): Entry {
 export function deleteEntry(headers: Headers, id: string): void {
   const { database, currentUser } = storeForWrite(headers);
   const row = database
-    .prepare("SELECT member_id FROM entries WHERE id = ?")
-    .get(id) as { member_id: string } | undefined;
+    .prepare<MemberIdRow, [string]>(
+      "SELECT member_id FROM entries WHERE id = ?",
+    )
+    .get(id);
   if (!row) {
     return;
   }
@@ -1183,11 +1245,11 @@ export function csvExport(headers: Headers): string {
       JOIN members ON members.id = entries.member_id
       ORDER BY members.display_name, entries.date
     `;
-  const rows = (
-    currentUser.fromHomeAssistant
-      ? database.prepare(query).all(currentUser.id, currentUser.id)
-      : database.prepare(query).all()
-  ) as Record<string, unknown>[];
+  const rows = currentUser.fromHomeAssistant
+    ? database
+        .prepare<CsvExportRow, [string, string]>(query)
+        .all(currentUser.id, currentUser.id)
+    : database.prepare<CsvExportRow, []>(query).all();
 
   const escapeCsv = (value: unknown): string => {
     if (value == null) {
