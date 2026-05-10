@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.0
+
+*   Rebuilt the frontend on Mantine — every screen, form, modal, chart, and
+    navigation surface uses Mantine components.
+*   Refreshed the visual identity to the GitHub Primer palette in both light
+    and dark themes, with a cool dark scale that matches the body background.
+*   Improved forms with declarative validation and accessible date, time,
+    weight, and selection controls.
+*   Replaced the navigation chrome with a responsive layout — desktop sidebar
+    and mobile bottom-tab bar.
+*   Replaced the hand-drawn weight chart with an interactive line chart that
+    has built-in tooltips and time-range filtering.
+*   Switched to Tabler icons and removed the bundled Material Symbols font.
+
 ## 0.2.3
 
 *   Added profile theme preferences.
