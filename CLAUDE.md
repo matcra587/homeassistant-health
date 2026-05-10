@@ -40,6 +40,7 @@ mise tasks                # List available tasks
 mise run deps             # Install app dependencies
 mise run dev              # Start the app dev server
 mise run build            # Build production assets/server
+mise run bump -- patch    # Bump package.json and config.yaml versions
 mise run test             # Run all tests
 mise run test:ts          # Run Bun tests
 mise run lint             # Run all lint checks

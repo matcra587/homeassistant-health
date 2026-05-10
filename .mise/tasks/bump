@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+part="${1:-}"
+
+case "${part}" in
+	major | minor | patch) ;;
+	*)
+		echo "usage: mise run bump -- <major|minor|patch>" >&2
+		exit 2
+		;;
+esac
+
+app_dir="${BUMP_APP_DIR:-${APP_DIR:-health-tracker}}"
+package_file="${app_dir}/package.json"
+config_file="${app_dir}/config.yaml"
+
+if [[ ! -f "${package_file}" ]]; then
+	echo "bump failed: ${package_file} not found" >&2
+	exit 1
+fi
+
+if [[ ! -f "${config_file}" ]]; then
+	echo "bump failed: ${config_file} not found" >&2
+	exit 1
+fi
+
+package_version="$(
+	# shellcheck disable=SC2016
+	PACKAGE_FILE="${package_file}" bun --eval '
+const packageFile = Bun.env.PACKAGE_FILE;
+const packageJson = JSON.parse(await Bun.file(packageFile).text());
+if (typeof packageJson.version !== "string") {
+  process.exit(1);
+}
+console.log(packageJson.version);
+'
+)"
+
+config_version="$(sed -nE 's/^version:[[:space:]]+"?([0-9]+\.[0-9]+\.[0-9]+)"?[[:space:]]*$/\1/p' "${config_file}")"
+
+if [[ -z "${config_version}" ]]; then
+	echo "bump failed: ${config_file} must contain one semver version field" >&2
+	exit 1
+fi
+
+if [[ "${config_version}" == *$'\n'* ]]; then
+	echo "bump failed: ${config_file} contains multiple semver version fields" >&2
+	exit 1
+fi
+
+semver_regex='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
+
+if [[ ! "${package_version}" =~ ${semver_regex} ]]; then
+	echo "bump failed: package.json version must be plain semver, got ${package_version}" >&2
+	exit 1
+fi
+
+if [[ "${package_version}" != "${config_version}" ]]; then
+	echo "bump failed: package.json version ${package_version} does not match config.yaml version ${config_version}" >&2
+	exit 1
+fi
+
+IFS=. read -r major minor patch <<< "${package_version}"
+
+case "${part}" in
+	major)
+		major=$((major + 1))
+		minor=0
+		patch=0
+		;;
+	minor)
+		minor=$((minor + 1))
+		patch=0
+		;;
+	patch)
+		patch=$((patch + 1))
+		;;
+esac
+
+next_version="${major}.${minor}.${patch}"
+
+# shellcheck disable=SC2016
+PACKAGE_FILE="${package_file}" NEXT_VERSION="${next_version}" bun --eval '
+const packageFile = Bun.env.PACKAGE_FILE;
+const nextVersion = Bun.env.NEXT_VERSION;
+const packageJson = JSON.parse(await Bun.file(packageFile).text());
+packageJson.version = nextVersion;
+await Bun.write(packageFile, `${JSON.stringify(packageJson, null, 2)}\n`);
+'
+
+tmp_file="$(mktemp)"
+trap 'rm -f "${tmp_file}"' EXIT
+
+if ! awk -v next_version="${next_version}" '
+	BEGIN { updates = 0 }
+	/^version:[[:space:]]+"?[0-9]+\.[0-9]+\.[0-9]+"?[[:space:]]*$/ {
+		print "version: \"" next_version "\""
+		updates += 1
+		next
+	}
+	{ print }
+	END { exit updates == 1 ? 0 : 1 }
+' "${config_file}" > "${tmp_file}"; then
+	echo "bump failed: expected exactly one semver version field in ${config_file}" >&2
+	exit 1
+fi
+
+mv "${tmp_file}" "${config_file}"
+trap - EXIT
+
+echo "${package_version} -> ${next_version}"
