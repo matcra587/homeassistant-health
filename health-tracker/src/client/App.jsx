@@ -867,6 +867,29 @@ function fmtDateLong(d) {
   return new Date(d).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
 }
 
+// Mantine's DateInput returns "YYYY-MM-DD" strings which `new Date(...)` parses
+// as UTC midnight — that shifts to the previous day in negative-UTC timezones.
+// Build the date in local time so the picked day round-trips correctly.
+function parseFormDate(value) {
+  if (value instanceof Date) return new Date(value);
+  if (typeof value === "string") {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    }
+  }
+  return value ? new Date(value) : null;
+}
+
+// Local-time YYYY-MM-DD key, used for entry IDs and de-duplication so the day
+// stays consistent regardless of the host's timezone offset.
+function formatLocalDateKey(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 // BMI = kg / m^2
 function calcBMI(kg, heightCm) {
   if (!kg || !heightCm) return null;
@@ -2009,8 +2032,8 @@ function ProfileScreen({ me, units, theme, onUpdate, onUnits, onTheme }) {
             placeholder="Pick a date"
             value={targetDateValue}
             onChange={(value) => {
-              if (!value) return;
-              const date = new Date(value);
+              const date = parseFormDate(value);
+              if (!date) return;
               date.setHours(8, 0, 0, 0);
               update({ targetDate: date.toISOString() });
             }}
@@ -2129,9 +2152,9 @@ function LogWeightModal({ me, units, existingEntry, onSave, onClose }) {
         : waistRaw
       : null;
     const bodyFatNum = typeof values.bodyFat === "number" ? values.bodyFat : parseFloat(values.bodyFat);
-    const date = new Date(values.date);
+    const date = parseFormDate(values.date);
     date.setHours(8, 0, 0, 0);
-    const dateKey = date.toISOString().slice(0, 10);
+    const dateKey = formatLocalDateKey(date);
     onSave({
       id: existingEntry?.id || `${me.id}-${dateKey}`,
       memberId: me.id,
@@ -2336,10 +2359,10 @@ function FirstRun({ profile, onDone }) {
       activityLevel: isNotEmpty("Required"),
       startWeight: isPositiveNumber("Required"),
       goalWeight: isPositiveNumber("Required"),
-      targetDate: (value) =>
-        value instanceof Date && !Number.isNaN(value.getTime())
-          ? null
-          : "Pick a date",
+      targetDate: (value) => {
+        const date = parseFormDate(value);
+        return date && !Number.isNaN(date.getTime()) ? null : "Pick a date";
+      },
     },
   });
 
@@ -2367,7 +2390,7 @@ function FirstRun({ profile, onDone }) {
     const heightCm = usingImperial ? heightNum / CM_TO_IN : heightNum;
     const startKg = usingImperial ? lbToKg(startNum) : startNum;
     const goalKg = usingImperial ? lbToKg(goalNum) : goalNum;
-    const target = new Date(values.targetDate);
+    const target = parseFormDate(values.targetDate);
     target.setHours(8, 0, 0, 0);
     try {
       await onDone({
@@ -2592,10 +2615,10 @@ function AddMemberModal({ onAdd, onClose }) {
       },
       startWeightKg: isPositiveNumber("Required"),
       goalWeightKg: isPositiveNumber("Required"),
-      targetDate: (value) =>
-        value instanceof Date && !Number.isNaN(value.getTime())
-          ? null
-          : "Pick a target date",
+      targetDate: (value) => {
+        const date = parseFormDate(value);
+        return date && !Number.isNaN(date.getTime()) ? null : "Pick a target date";
+      },
     },
   });
 
@@ -2625,7 +2648,7 @@ function AddMemberModal({ onAdd, onClose }) {
     const heightCm = values.units === "imperial" ? heightNum / CM_TO_IN : heightNum;
     const startKg = values.units === "imperial" ? lbToKg(startNum) : startNum;
     const goalKg = values.units === "imperial" ? lbToKg(goalNum) : goalNum;
-    const target = new Date(values.targetDate);
+    const target = parseFormDate(values.targetDate);
     target.setHours(8, 0, 0, 0);
     try {
       await onAdd({
