@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1
+
+*   Fixed the dashboard greeting so it reflects the actual time of day instead
+    of always reading "Good morning".
+
 ## 0.3.0
 
 *   Rebuilt the frontend on Mantine — every screen, form, modal, chart, and
