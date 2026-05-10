@@ -3,6 +3,8 @@
 !package.json
 !bun.lock
 !tsconfig.json
+!icon.png
+!logo.png
 !run.sh
 !src
 !src/**

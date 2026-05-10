@@ -1,3 +1,10 @@
 * text=auto eol=lf
 
 *.png binary -eol
+*.woff2 binary -eol
+
+*.pkl linguist-vendored
+*.sh linguist-vendored
+.mise/tasks/* linguist-vendored
+health-tracker/Dockerfile linguist-vendored
+health-tracker/src/server/index.html linguist-vendored

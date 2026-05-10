@@ -6,6 +6,7 @@ WORKDIR /build
 COPY package.json bun.lock tsconfig.json ./
 RUN bun install --frozen-lockfile --production
 
+COPY icon.png logo.png ./
 COPY src ./src
 RUN bun run build
 

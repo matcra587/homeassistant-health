@@ -1,6 +1,6 @@
 ---
 name: Home Assistant Health
-version: "0.1.0"
+version: "0.2.0"
 slug: homeassistant_health
 description: Family health tracker for Home Assistant
 url: https://github.com/matcra587/homeassistant-health/tree/main/health-tracker
