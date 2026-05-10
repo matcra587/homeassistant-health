@@ -30,8 +30,69 @@ concurrency:
 permissions: {}
 
 jobs:
+  publish-policy:
+    name: Publish policy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      publish: ${{ steps.policy.outputs.publish }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Determine publish policy
+        id: policy
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+          REQUESTED_PUBLISH: ${{ inputs.publish || false }}
+        run: |
+          set -euo pipefail
+
+          package_file="health-tracker/package.json"
+          config_file="health-tracker/config.yaml"
+
+          package_version="$(jq -r '.version // empty' "${package_file}")"
+          config_version="$(sed -nE 's/^version:[[:space:]]+"?([0-9]+\.[0-9]+\.[0-9]+)"?[[:space:]]*$/\1/p' "${config_file}")"
+
+          if [[ -z "${package_version}" || -z "${config_version}" ]]; then
+            echo "::error::package.json and config.yaml must both define versions"
+            exit 1
+          fi
+
+          if [[ "${package_version}" != "${config_version}" ]]; then
+            echo "::error::package.json version ${package_version} does not match config.yaml version ${config_version}"
+            exit 1
+          fi
+
+          publish=false
+
+          if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
+            publish="${REQUESTED_PUBLISH}"
+          elif [[ "${EVENT_NAME}" == "push" ]]; then
+            if [[ "${BEFORE_SHA}" =~ ^0+$ ]]; then
+              publish=true
+            else
+              before_package_version="$(git show "${BEFORE_SHA}:${package_file}" | jq -r '.version // empty' || true)"
+              before_config_version="$(git show "${BEFORE_SHA}:${config_file}" | sed -nE 's/^version:[[:space:]]+"?([0-9]+\.[0-9]+\.[0-9]+)"?[[:space:]]*$/\1/p' || true)"
+
+              if [[ "${package_version}" != "${before_package_version}" || "${config_version}" != "${before_config_version}" ]]; then
+                publish=true
+              fi
+            fi
+          fi
+
+          echo "publish=${publish}" >> "${GITHUB_OUTPUT}"
+          echo "Publish images: ${publish}"
+        shell: bash
+
   build:
     name: Build health-tracker
+    needs: publish-policy
     permissions:
       contents: read
       id-token: write # Required for keyless Cosign signing when publishing.
@@ -39,4 +100,4 @@ jobs:
     uses: ./.github/workflows/build-app.yaml
     with:
       app: health-tracker
-      publish: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish) }}
+      publish: ${{ needs.publish-policy.outputs.publish == 'true' }}
