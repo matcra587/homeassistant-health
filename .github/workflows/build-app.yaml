@@ -22,12 +22,12 @@ jobs:
     outputs:
       architectures: ${{ steps.info.outputs.architectures }}
       build-matrix: ${{ steps.matrix.outputs.matrix }}
-      description: ${{ steps.info.outputs.description }}
+      description: ${{ steps.normalize.outputs.description }}
       image-name: ${{ steps.normalize.outputs.image-name }}
-      name: ${{ steps.info.outputs.name }}
+      name: ${{ steps.normalize.outputs.name }}
       registry-prefix: ${{ steps.normalize.outputs.registry-prefix }}
-      url: ${{ steps.info.outputs.url }}
-      version: ${{ steps.info.outputs.version }}
+      url: ${{ steps.normalize.outputs.url }}
+      version: ${{ steps.normalize.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -41,18 +41,46 @@ jobs:
         with:
           path: ./${{ inputs.app }}
 
-      - name: Normalize image information
+      - name: Normalize app information
         id: normalize
         env:
-          IMAGE: ${{ steps.info.outputs.image }}
+          DESCRIPTION_JSON: ${{ steps.info.outputs.description }}
+          IMAGE_JSON: ${{ steps.info.outputs.image }}
+          NAME_JSON: ${{ steps.info.outputs.name }}
+          URL_JSON: ${{ steps.info.outputs.url }}
+          VERSION_JSON: ${{ steps.info.outputs.version }}
         run: |
-          if [[ -z "${IMAGE}" || "${IMAGE}" == "null" ]]; then
+          set -euo pipefail
+
+          json_value() {
+            local value="${1}"
+
+            if [[ -z "${value}" || "${value}" == "null" ]]; then
+              return 0
+            fi
+
+            jq -r . <<< "${value}"
+          }
+
+          description="$(json_value "${DESCRIPTION_JSON}")"
+          image="$(json_value "${IMAGE_JSON}")"
+          name="$(json_value "${NAME_JSON}")"
+          url="$(json_value "${URL_JSON}")"
+          version="$(json_value "${VERSION_JSON}")"
+
+          if [[ -z "${image}" ]]; then
             echo "::error::config.yaml must set image before app images can be built"
             exit 1
           fi
 
-          echo "image-name=${IMAGE##*/}" >> "${GITHUB_OUTPUT}"
-          echo "registry-prefix=${IMAGE%/*}" >> "${GITHUB_OUTPUT}"
+          {
+            echo "description=${description}"
+            echo "image-name=${image##*/}"
+            echo "name=${name}"
+            echo "registry-prefix=${image%/*}"
+            echo "url=${url}"
+            echo "version=${version}"
+          } >> "${GITHUB_OUTPUT}"
         shell: bash
 
       - name: Prepare build matrix
