@@ -1,33 +1,71 @@
+import {
+  type BMICategory,
+  calculateBMI,
+  calculateBMR,
+  calculateIdealWeight,
+  getBodyFatCategory,
+} from "@finegym/fitness-calc";
 import type { Entry, Member, Sex } from "../../lib/types";
 import { getToday } from "../store";
+
+// @finegym/fitness-calc uses 'male'/'female'; we store 'M'/'F'. Map at the
+// boundary so callers stay in our shape and unknown sexes short-circuit to
+// null rather than throwing inside the library.
+function toGender(sex: Sex | null | undefined): "male" | "female" | null {
+  if (sex === "M") return "male";
+  if (sex === "F") return "female";
+  return null;
+}
 
 export function calcBMI(
   kg: number | null | undefined,
   heightCm: number | null | undefined,
 ): number | null {
   if (!kg || !heightCm) return null;
-  const m = heightCm / 100;
-  return kg / (m * m);
+  return calculateBMI(kg, heightCm).bmi;
+}
+
+// Human-readable labels for the library's WHO-aligned BMI categories.
+const BMI_CATEGORY_LABEL: Record<BMICategory, string> = {
+  underweight_severe: "Severely underweight",
+  underweight_moderate: "Moderately underweight",
+  underweight_mild: "Mildly underweight",
+  normal: "Healthy",
+  overweight: "Overweight",
+  obese_class_1: "Obese class I",
+  obese_class_2: "Obese class II",
+  obese_class_3: "Obese class III",
+};
+
+// WHO BMI thresholds — stable global standard, mirrored from the library's
+// internal classifyBMI so we don't have to fabricate a weight/height pair
+// just to recover the category from a number we already have.
+function classifyBMI(bmi: number): BMICategory {
+  if (bmi < 16) return "underweight_severe";
+  if (bmi < 17) return "underweight_moderate";
+  if (bmi < 18.5) return "underweight_mild";
+  if (bmi < 25) return "normal";
+  if (bmi < 30) return "overweight";
+  if (bmi < 35) return "obese_class_1";
+  if (bmi < 40) return "obese_class_2";
+  return "obese_class_3";
 }
 
 export function bmiCategory(bmi: number | null | undefined): string | null {
-  if (bmi == null) return null;
-  if (bmi < 18.5) return "Underweight";
-  if (bmi < 25) return "Healthy";
-  if (bmi < 30) return "Overweight";
-  return "Obese";
+  if (bmi == null || !Number.isFinite(bmi) || bmi <= 0) return null;
+  return BMI_CATEGORY_LABEL[classifyBMI(bmi)];
 }
 
-/** Mifflin–St Jeor BMR. */
+/** Mifflin–St Jeor BMR via @finegym/fitness-calc (the library default). */
 export function calcBMR(
   kg: number | null | undefined,
   heightCm: number | null | undefined,
   age: number | null | undefined,
   sex: Sex | null | undefined,
 ): number | null {
-  if (!kg || !heightCm || !age) return null;
-  const base = 10 * kg + 6.25 * heightCm - 5 * age;
-  return sex === "M" ? base + 5 : base - 161;
+  const gender = toGender(sex);
+  if (!kg || !heightCm || !age || !gender) return null;
+  return calculateBMR(kg, heightCm, age, gender).bmr;
 }
 
 export function calcTDEE(
@@ -37,11 +75,20 @@ export function calcTDEE(
   sex: Sex | null | undefined,
   activity: number | null | undefined,
 ): number | null {
+  // We store activityLevel as a numeric multiplier (e.g. 1.55) rather than
+  // the library's enum, so compute BMR via the library and multiply with our
+  // value directly instead of routing through `calculateTDEE`.
   const bmr = calcBMR(kg, heightCm, age, sex);
   return bmr && activity ? bmr * activity : null;
 }
 
-/** Deurenberg body-fat estimate. */
+/**
+ * Deurenberg body-fat estimate. Kept in-house because the library's
+ * `bmi_derived` body-fat method hardcodes age = 30, which loses the
+ * age-correction term that makes Deurenberg useful at all. Track the
+ * upstream fix at https://github.com/finegym-io/fitness-calc/issues — once
+ * the library exposes a real-age Deurenberg, swap to it.
+ */
 export function estBodyFat(
   kg: number | null | undefined,
   heightCm: number | null | undefined,
@@ -54,15 +101,30 @@ export function estBodyFat(
   return 1.2 * bmi + 0.23 * age - 10.8 * sexFactor - 5.4;
 }
 
-/** Robinson ideal body weight. */
+/**
+ * ACE-standard body-fat category for a given percentage. Percentage is
+ * Deurenberg from {@link estBodyFat}; the band labels (`essential`, `athlete`,
+ * `fitness`, `average`, `obese`) come from @finegym/fitness-calc directly.
+ * Capitalised on the way out so the UI matches the BMI sub-label style.
+ */
+export function bodyFatCategory(
+  bodyFatPercentage: number | null | undefined,
+  sex: Sex | null | undefined,
+): string | null {
+  const gender = toGender(sex);
+  if (bodyFatPercentage == null || !gender) return null;
+  const raw = getBodyFatCategory(bodyFatPercentage, gender);
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
+}
+
+/** Robinson ideal body weight via @finegym/fitness-calc. */
 export function calcIdealWeight(
   heightCm: number | null | undefined,
   sex: Sex | null | undefined,
 ): number | null {
-  if (!heightCm) return null;
-  const inchesOver5ft = heightCm / 2.54 - 60;
-  if (inchesOver5ft <= 0) return sex === "M" ? 52 : 49;
-  return (sex === "M" ? 52 : 49) + (sex === "M" ? 1.9 : 1.7) * inchesOver5ft;
+  const gender = toGender(sex);
+  if (!heightCm || !gender) return null;
+  return calculateIdealWeight(heightCm, gender).robinson;
 }
 
 export type StreakInfo = {

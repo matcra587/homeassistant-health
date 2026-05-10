@@ -23,6 +23,7 @@ import {
   calcPacing,
   calcStreak,
   calcTDEE,
+  bodyFatCategory,
   estBodyFat,
   progressFraction,
   trendDirection,
@@ -298,7 +299,7 @@ export function Dashboard({ me, entries, units, onLogToday }: DashboardProps) {
             {
               label: "Body-fat est.",
               value: bf ? `${bf.toFixed(1)}%` : "—",
-              sub: "Deurenberg",
+              sub: bodyFatCategory(bf, me.sex),
             },
             {
               label: "Ideal weight",
