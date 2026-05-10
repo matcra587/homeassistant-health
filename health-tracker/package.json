@@ -17,8 +17,18 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@mantine/charts": "^9.1.1",
+    "@mantine/core": "^9.1.1",
+    "@mantine/dates": "^9.1.1",
+    "@mantine/form": "^9.1.1",
+    "@mantine/hooks": "^9.1.1",
+    "@mantine/notifications": "^9.1.1",
+    "@tabler/icons-react": "^3.44.0",
+    "clsx": "^2.1.1",
+    "dayjs": "^1.11.20",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "react-dom": "^19.2.6",
+    "recharts": "^3.8.1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.15",

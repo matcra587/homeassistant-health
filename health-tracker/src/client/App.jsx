@@ -1,4 +1,52 @@
 import React from "react";
+import {
+  Accordion,
+  ActionIcon,
+  Affix,
+  AppShell,
+  Avatar as MAvatar,
+  Badge,
+  Box,
+  Burger,
+  Button,
+  Center,
+  ColorSwatch,
+  Divider,
+  Group,
+  Modal as MModal,
+  NumberInput,
+  Paper,
+  SegmentedControl,
+  Select as MSelect,
+  SimpleGrid,
+  Stack,
+  Switch as MSwitch,
+  Text,
+  TextInput as MTextInput,
+  Title,
+  Tooltip,
+  UnstyledButton,
+  useMantineColorScheme,
+} from "@mantine/core";
+import { LineChart } from "@mantine/charts";
+import { DateInput as MDateInput, TimeInput as MTimeInput } from "@mantine/dates";
+import { useForm } from "@mantine/form";
+import { useMediaQuery } from "@mantine/hooks";
+import {
+  IconCheck,
+  IconChartLine,
+  IconFlame,
+  IconHome,
+  IconList,
+  IconLock,
+  IconPencil,
+  IconPlus,
+  IconSparkles,
+  IconTrash,
+  IconUser,
+  IconUsers,
+  IconX,
+} from "@tabler/icons-react";
 import "./styles.css";
 import iconUrl from "../../icon.png";
 import { apiUrl } from "./api-url";
@@ -1103,525 +1151,25 @@ function Avatar({ member, size = 40 }) {
   );
 }
 
-function Stat({ label, value, sub, large, mono = true }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", fontWeight: 500 }}>
-        {label}
-      </div>
-      <div
-        className={mono ? "num" : ""}
-        style={{
-          fontFamily: large ? "var(--serif)" : "var(--sans)",
-          fontSize: large ? 44 : 22,
-          fontWeight: large ? 400 : 500,
-          letterSpacing: large ? "-0.02em" : "-0.01em",
-          color: "var(--ink)",
-          lineHeight: 1.05,
-        }}
-      >
-        {value}
-      </div>
-      {sub && (
-        <div style={{ fontSize: 12.5, color: "var(--ink-3)" }}>{sub}</div>
-      )}
-    </div>
-  );
-}
-
-function IconBtn({ children, label, onClick, danger }) {
-  return (
-    <button
-      className="btn-ghost focus-ring"
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-      style={{
-        width: 36, height: 36, padding: 0,
-        background: "transparent", border: 0,
-        display: "inline-flex", alignItems: "center", justifyContent: "center",
-        borderRadius: 8, cursor: "pointer",
-        color: danger ? "var(--terracotta)" : "var(--ink-2)",
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--paper-2)")}
-      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-    >
-      {children}
-    </button>
-  );
-}
-
-// Inline icons, hand-tuned 20px stroke set
-const Icon = {
-  Plus: (p) => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" {...p}><path d="M10 4v12M4 10h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>,
-  Pencil: (p) => <svg width="18" height="18" viewBox="0 0 20 20" fill="none" {...p}><path d="M14 3l3 3-9.5 9.5L4 16l.5-3.5L14 3z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>,
-  Trash: (p) => <svg width="18" height="18" viewBox="0 0 20 20" fill="none" {...p}><path d="M4 6h12M8 6V4h4v2M6 6l1 11h6l1-11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  Check: (p) => <svg width="18" height="18" viewBox="0 0 20 20" fill="none" {...p}><path d="M4 10l4 4 8-8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  X: (p) => <svg width="18" height="18" viewBox="0 0 20 20" fill="none" {...p}><path d="M5 5l10 10M15 5l-10 10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>,
-  Home: (p) => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" {...p}><path d="M3 9l7-5 7 5v8h-5v-5H8v5H3V9z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>,
-  List: (p) => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" {...p}><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>,
-  People: (p) => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" {...p}><circle cx="7.5" cy="7" r="2.6" stroke="currentColor" strokeWidth="1.4"/><circle cx="13.5" cy="8" r="2" stroke="currentColor" strokeWidth="1.4"/><path d="M2.5 16c0-2.5 2.2-4.4 5-4.4s5 1.9 5 4.4M12 16.5c.4-2 2-3.4 4-3.4 1.2 0 2.2.5 3 1.3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>,
-  Profile: (p) => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" {...p}><circle cx="10" cy="7.5" r="3" stroke="currentColor" strokeWidth="1.4"/><path d="M3.5 17c0-3 3-5 6.5-5s6.5 2 6.5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>,
-  Up: (p) => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" {...p}><path d="M3 9l4-4 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  Down: (p) => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" {...p}><path d="M3 5l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  Flame: (p) => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" {...p}><path d="M7 1c1 2.4-1.4 3.4-1.4 5.4 0 1.6 1.1 2.6 1.4 2.6.3 0 1.4-1 1.4-2.6 0-.7-.2-1.3-.4-1.8C9 6 10.4 7.6 10.4 9.4c0 2-1.5 3.6-3.4 3.6S3.6 11.4 3.6 9.4C3.6 6.4 7 5.4 7 1z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>,
-  Sparkle: (p) => <svg width="16" height="16" viewBox="0 0 16 16" fill="none" {...p}><path d="M8 2l1.4 4.6L14 8l-4.6 1.4L8 14l-1.4-4.6L2 8l4.6-1.4L8 2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>,
-  Lock: (p) => <svg width="14" height="14" viewBox="0 0 14 14" fill="none" {...p}><rect x="3" y="6" width="8" height="6" rx="1" stroke="currentColor" strokeWidth="1.3"/><path d="M5 6V4a2 2 0 014 0v2" stroke="currentColor" strokeWidth="1.3"/></svg>,
-  Settings: (p) => <svg width="20" height="20" viewBox="0 0 20 20" fill="none" {...p}><circle cx="10" cy="10" r="2.4" stroke="currentColor" strokeWidth="1.4"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.4 4.4l1.4 1.4M14.2 14.2l1.4 1.4M4.4 15.6l1.4-1.4M14.2 5.8l1.4-1.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>,
-};
-
-function Field({ label, hint, error, children }) {
-  return (
-    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <span style={{ fontSize: 12.5, color: "var(--ink-2)", fontWeight: 500, letterSpacing: "0.01em" }}>
-        {label}
-      </span>
-      {children}
-      {hint && !error && (
-        <span style={{ fontSize: 12, color: "var(--ink-3)" }}>{hint}</span>
-      )}
-      {error && (
-        <span style={{ fontSize: 12, color: "var(--terracotta)" }}>{error}</span>
-      )}
-    </label>
-  );
-}
-
-const inputStyle = {
-  background: "var(--card)",
-  border: "1px solid var(--rule)",
-  padding: "10px 12px",
-  borderRadius: 10,
-  color: "var(--ink)",
-  fontSize: 14,
-  outline: "none",
-  transition: "border-color 160ms ease, background 160ms ease",
-  width: "100%",
-};
-
-function TextInput({ value, onChange, type = "text", ...rest }) {
-  return (
-    <input
-      type={type}
-      value={value ?? ""}
-      onChange={(e) => onChange?.(e.target.value)}
-      style={inputStyle}
-      onFocus={(e) => (e.currentTarget.style.borderColor = "var(--sage)")}
-      onBlur={(e) => (e.currentTarget.style.borderColor = "var(--rule)")}
-      {...rest}
-    />
-  );
-}
-
-function Select({ value, onChange, options }) {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef(null);
-  const selected = options.find((option) => String(option.value) === String(value)) ?? options[0];
-
-  useEffect(() => {
-    if (!open) return;
-    function handlePointerDown(event) {
-      if (!rootRef.current?.contains(event.target)) setOpen(false);
-    }
-    function handleKeyDown(event) {
-      if (event.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [open]);
-
-  function choose(option) {
-    onChange?.(option.value);
-    setOpen(false);
-  }
-
-  return (
-    <div className="select-root" ref={rootRef}>
-      <button
-        type="button"
-        className="select-control"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
-        onKeyDown={(event) => {
-          if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            setOpen(true);
-          }
-        }}
-      >
-        <span className={selected?.value === "" ? "select-placeholder" : undefined}>{selected?.label ?? ""}</span>
-        <span className="material-symbols-outlined" aria-hidden>expand_more</span>
-      </button>
-      {open && (
-        <div className="select-menu" role="listbox">
-          {options.map((option) => {
-            const selectedOption = String(option.value) === String(value);
-            return (
-              <button
-                key={option.value}
-                type="button"
-                className="select-option"
-                role="option"
-                aria-selected={selectedOption}
-                data-selected={selectedOption}
-                onClick={() => choose(option)}
-              >
-                <span>{option.label}</span>
-                {selectedOption && <Icon.Check />}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function parseDateInput(value) {
-  if (!value) return null;
-  const [year, month, day] = String(value).slice(0, 10).split("-").map(Number);
-  if (!year || !month || !day) return null;
-  const date = new Date(year, month - 1, day);
-  if (Number.isNaN(date.getTime())) return null;
-  return date;
-}
-
-function formatDateInput(date) {
-  return [
-    date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, "0"),
-    String(date.getDate()).padStart(2, "0"),
-  ].join("-");
-}
-
-function dateInputToIso(value) {
-  const date = parseDateInput(value);
-  if (!date) return value;
-  date.setHours(8, 0, 0, 0);
-  return date.toISOString();
-}
-
-function displayDateInput(value) {
-  const date = parseDateInput(value);
-  if (!date) return "Select date";
-  return date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
-}
-
-function monthLabel(date) {
-  return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-}
-
-function monthStart(date) {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-}
-
-function buildMonthCells(month) {
-  const first = monthStart(month);
-  const daysInMonth = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
-  const cells = Array.from({ length: first.getDay() }, () => null);
-  for (let day = 1; day <= daysInMonth; day++) {
-    cells.push(new Date(first.getFullYear(), first.getMonth(), day));
-  }
-  while (cells.length % 7 !== 0) cells.push(null);
-  return cells;
-}
-
-function monthDistance(from, to) {
-  return (from.getFullYear() - to.getFullYear()) * 12 + from.getMonth() - to.getMonth();
-}
-
-function DateMonth({ month, selectedDate, onChoose }) {
-  const days = useMemo(() => buildMonthCells(month), [month]);
-
-  return (
-    <section className="date-month">
-      <div className="date-month-title">{monthLabel(month)}</div>
-      <div className="date-weekdays" aria-hidden>
-        {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
-          <span key={`${day}-${index}`}>{day}</span>
-        ))}
-      </div>
-      <div className="date-grid">
-        {days.map((date, index) => {
-          const selected = date && selectedDate && formatDateInput(date) === formatDateInput(selectedDate);
-          return date ? (
-            <button
-              key={formatDateInput(date)}
-              type="button"
-              className="date-day"
-              data-selected={selected}
-              aria-pressed={selected}
-              onClick={() => onChoose(date)}
-            >
-              {date.getDate()}
-            </button>
-          ) : (
-            <span key={`blank-${index}`} className="date-day-empty" />
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function DateInput({ value, onChange, history = false }) {
-  const selectedDate = parseDateInput(value);
-  const [open, setOpen] = useState(false);
-  const [visibleMonth, setVisibleMonth] = useState(() => {
-    const date = selectedDate ?? new Date();
-    return monthStart(date);
-  });
-  const [historyMonthCount, setHistoryMonthCount] = useState(12);
-  const rootRef = useRef(null);
-
-  useEffect(() => {
-    if (selectedDate) {
-      setVisibleMonth(monthStart(selectedDate));
-    }
-  }, [value]);
-
-  useEffect(() => {
-    if (!history || !selectedDate) return;
-    const currentMonth = monthStart(new Date());
-    const selectedMonth = monthStart(selectedDate);
-    const distance = monthDistance(currentMonth, selectedMonth);
-    if (distance >= historyMonthCount) {
-      setHistoryMonthCount(Math.max(12, distance + 1));
-    }
-  }, [history, historyMonthCount, selectedDate]);
-
-  useEffect(() => {
-    if (!open) return;
-    function handlePointerDown(event) {
-      if (!rootRef.current?.contains(event.target)) setOpen(false);
-    }
-    function handleKeyDown(event) {
-      if (event.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [open]);
-
-  const historyMonths = useMemo(() => {
-    const currentMonth = monthStart(new Date());
-    return Array.from(
-      { length: historyMonthCount },
-      (_, index) => new Date(currentMonth.getFullYear(), currentMonth.getMonth() - index, 1)
-    );
-  }, [historyMonthCount]);
-
-  function changeMonth(delta) {
-    setVisibleMonth((current) => new Date(current.getFullYear(), current.getMonth() + delta, 1));
-  }
-
-  function choose(date) {
-    onChange?.(formatDateInput(date));
-    setOpen(false);
-  }
-
-  return (
-    <div className="date-root" ref={rootRef}>
-      <button
-        type="button"
-        className="date-control"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
-      >
-        <span>{displayDateInput(value)}</span>
-        <span className="material-symbols-outlined" aria-hidden>calendar_today</span>
-      </button>
-      {open && (
-        <div className={`date-menu${history ? " date-scroll-menu" : ""}`} role="dialog" aria-label="Choose date">
-          {history ? (
-            <>
-              <div className="date-scroll-body">
-                {historyMonths.map((month) => (
-                  <DateMonth key={formatDateInput(month)} month={month} selectedDate={selectedDate} onChoose={choose} />
-                ))}
-              </div>
-              <button
-                type="button"
-                className="date-load-older"
-                onClick={() => setHistoryMonthCount((count) => count + 12)}
-              >
-                Show older months
-              </button>
-            </>
-          ) : (
-            <>
-              <div className="date-menu-header">
-                <button type="button" className="date-nav-button" aria-label="Previous month" onClick={() => changeMonth(-1)}>
-                  <span className="material-symbols-outlined" aria-hidden>chevron_left</span>
-                </button>
-                <div className="date-menu-title">{monthLabel(visibleMonth)}</div>
-                <button type="button" className="date-nav-button" aria-label="Next month" onClick={() => changeMonth(1)}>
-                  <span className="material-symbols-outlined" aria-hidden>chevron_right</span>
-                </button>
-              </div>
-              <DateMonth month={visibleMonth} selectedDate={selectedDate} onChoose={choose} />
-            </>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function parseTimeInput(value) {
-  const match = String(value ?? "").match(/^(\d{1,2}):(\d{2})$/);
-  if (!match) return { hour: 8, minute: 0 };
-  const hour = Math.min(23, Math.max(0, Number(match[1])));
-  const minute = Math.min(59, Math.max(0, Number(match[2])));
-  return { hour, minute };
-}
-
-function formatTimeInput(hour, minute) {
-  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-}
-
-function displayTimeInput(value) {
-  const { hour, minute } = parseTimeInput(value);
-  const period = hour >= 12 ? "PM" : "AM";
-  const hour12 = hour % 12 || 12;
-  return `${String(hour12).padStart(2, "0")}:${String(minute).padStart(2, "0")} ${period}`;
-}
-
-function TimeInput({ value, onChange }) {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef(null);
-  const { hour, minute } = parseTimeInput(value);
-  const period = hour >= 12 ? "PM" : "AM";
-  const hour12 = hour % 12 || 12;
-  const minuteStep = Math.round(minute / 5) * 5;
-  const displayedMinute = minuteStep === 60 ? 55 : minuteStep;
-  const hours = Array.from({ length: 12 }, (_, index) => index + 1);
-  const minutes = Array.from({ length: 12 }, (_, index) => index * 5);
-
-  useEffect(() => {
-    if (!open) return;
-    function handlePointerDown(event) {
-      if (!rootRef.current?.contains(event.target)) setOpen(false);
-    }
-    function handleKeyDown(event) {
-      if (event.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [open]);
-
-  function commit(nextHour12, nextMinute, nextPeriod) {
-    let nextHour = nextHour12 % 12;
-    if (nextPeriod === "PM") nextHour += 12;
-    onChange?.(formatTimeInput(nextHour, nextMinute));
-  }
-
-  return (
-    <div className="time-root" ref={rootRef}>
-      <button
-        type="button"
-        className="time-control"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
-      >
-        <span>{displayTimeInput(value)}</span>
-        <span className="material-symbols-outlined" aria-hidden>schedule</span>
-      </button>
-      {open && (
-        <div className="time-menu" role="dialog" aria-label="Choose time">
-          <div className="time-preview">{displayTimeInput(value)}</div>
-          <div className="time-picker-grid">
-            <div>
-              <div className="time-picker-label">Hour</div>
-              <div className="time-option-grid">
-                {hours.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    className="time-option"
-                    data-selected={option === hour12}
-                    onClick={() => commit(option, minute, period)}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <div className="time-picker-label">Minute</div>
-              <div className="time-option-grid">
-                {minutes.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    className="time-option"
-                    data-selected={option === displayedMinute}
-                    onClick={() => commit(hour12, option, period)}
-                  >
-                    {String(option).padStart(2, "0")}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="time-period-row">
-            {["AM", "PM"].map((option) => (
-              <button
-                key={option}
-                type="button"
-                className="time-period-button"
-                data-selected={option === period}
-                onClick={() => commit(hour12, minute, option)}
-              >
-                {option}
-              </button>
-            ))}
-          </div>
-          <div className="time-actions">
-            <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>Done</button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Switch({ checked, onChange, label }) {
-  return (
-    <button
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      onClick={() => onChange?.(!checked)}
-      className="switch focus-ring"
-      data-on={checked}
-    />
-  );
-}
 
 function ProgressBar({ fraction, color }) {
   const pct = Math.round(fraction * 100);
   return (
-    <div style={{ position: "relative", height: 6, background: "var(--rule-soft)", borderRadius: 999, overflow: "hidden" }}>
+    <div
+      style={{
+        position: "relative",
+        height: 6,
+        background: "var(--mantine-color-default-border)",
+        borderRadius: 999,
+        overflow: "hidden",
+      }}
+    >
       <div
         style={{
-          position: "absolute", inset: 0,
+          position: "absolute",
+          inset: 0,
           width: `${pct}%`,
-          background: color || "var(--sage)",
+          background: color || "var(--mantine-primary-color-filled)",
           borderRadius: 999,
           transition: "width 600ms cubic-bezier(.2,.8,.2,1)",
         }}
@@ -1649,7 +1197,7 @@ function Logo({ size = 22, width }) {
   );
 }
 
-Object.assign(window, { Avatar, Stat, IconBtn, Icon, Field, TextInput, Select, DateInput, TimeInput, Switch, ProgressBar, Logo, inputStyle });
+Object.assign(window, { Avatar, ProgressBar, Logo });
 
 
 // ---- chart.jsx ----
@@ -1664,227 +1212,100 @@ function filterByRange(entries, range) {
   return entries.filter((e) => +new Date(e.date) >= cutoff);
 }
 
-function WeightChart({ entries, member, units, height = 280, pacing = null }) {
+function WeightChart({ entries, member, units, height = 280 }) {
   const [range, setRange] = useState("3M");
-  const [hover, setHover] = useState(null);
-  const wrapRef = useRef(null);
 
   const data = useMemo(() => {
-    const filtered = filterByRange(entries, range)
+    return filterByRange(entries, range)
       .slice()
-      .sort((a, b) => +new Date(a.date) - +new Date(b.date));
-    return filtered;
-  }, [entries, range]);
+      .sort((a, b) => +new Date(a.date) - +new Date(b.date))
+      .map((e) => ({
+        date: fmtDate(e.date),
+        weight: units === "imperial" ? kgToLb(e.weightKg) : e.weightKg,
+      }));
+  }, [entries, range, units]);
 
   if (entries.length < 3) {
     return (
-      <div className="card" style={{ padding: "48px 32px", textAlign: "center" }}>
-        <div className="serif" style={{ fontSize: 24, color: "var(--ink-2)", marginBottom: 8 }}>
-          Not enough yet to draw a line.
-        </div>
-        <div style={{ color: "var(--ink-3)", fontSize: 14, maxWidth: 360, margin: "0 auto" }}>
-          A few more days of entries and the trend will appear here. Keep at it — quietly.
-        </div>
-      </div>
+      <Paper withBorder radius="md" p="xl">
+        <Stack align="center" gap="xs">
+          <Title order={3} fz={20} fw={500} c="dimmed">
+            Not enough yet to draw a line.
+          </Title>
+          <Text c="dimmed" fz="sm" maw={360} ta="center">
+            A few more days of entries and the trend will appear here. Keep at
+            it — quietly.
+          </Text>
+        </Stack>
+      </Paper>
     );
   }
 
-  const W = 800, H = height, padX = 40, padY = 30;
-  const xs = data.map((d) => +new Date(d.date));
-  const ys = data.map((d) => d.weightKg);
-  const minX = Math.min(...xs), maxX = Math.max(...xs);
-  const minY = Math.min(...ys, member.goalWeightKg) - 0.8;
-  const maxY = Math.max(...ys, member.goalWeightKg) + 0.8;
-
-  const scaleX = (x) => padX + ((x - minX) / (maxX - minX || 1)) * (W - padX * 2);
-  const scaleY = (y) => H - padY - ((y - minY) / (maxY - minY || 1)) * (H - padY * 2);
-
-  // Smoothed catmull-rom path for soft, hand-drawn feel
-  const points = data.map((d) => [scaleX(+new Date(d.date)), scaleY(d.weightKg)]);
-  function smoothPath(pts) {
-    if (pts.length < 2) return "";
-    let d = `M ${pts[0][0]} ${pts[0][1]}`;
-    for (let i = 0; i < pts.length - 1; i++) {
-      const p0 = pts[i - 1] || pts[i];
-      const p1 = pts[i];
-      const p2 = pts[i + 1];
-      const p3 = pts[i + 2] || p2;
-      const cp1x = p1[0] + (p2[0] - p0[0]) / 6;
-      const cp1y = p1[1] + (p2[1] - p0[1]) / 6;
-      const cp2x = p2[0] - (p3[0] - p1[0]) / 6;
-      const cp2y = p2[1] - (p3[1] - p1[1]) / 6;
-      d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2[0]} ${p2[1]}`;
-    }
-    return d;
-  }
-  const linePath = smoothPath(points);
-  const areaPath = `${linePath} L ${points[points.length - 1][0]} ${H - padY} L ${points[0][0]} ${H - padY} Z`;
-
-  const goalY = scaleY(member.goalWeightKg);
-
-  // Y-axis ticks: 4 evenly spaced
-  const ticks = [];
-  for (let i = 0; i <= 3; i++) {
-    const v = minY + ((maxY - minY) / 3) * (3 - i);
-    ticks.push({ y: scaleY(v), v });
-  }
-
-  // X-axis labels: first, middle, last
-  const xLabels = [data[0], data[Math.floor(data.length / 2)], data[data.length - 1]].filter(Boolean);
-
-  function onMove(e) {
-    const rect = wrapRef.current.getBoundingClientRect();
-    const px = ((e.clientX - rect.left) / rect.width) * W;
-    let nearest = 0, best = Infinity;
-    points.forEach((p, i) => {
-      const dx = Math.abs(p[0] - px);
-      if (dx < best) { best = dx; nearest = i; }
-    });
-    setHover({ idx: nearest, x: points[nearest][0], y: points[nearest][1] });
-  }
+  const goalDisplay = units === "imperial" ? kgToLb(member.goalWeightKg) : member.goalWeightKg;
+  const unitLabel = units === "imperial" ? "lb" : "kg";
 
   return (
-    <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 16 }}>
-          <span style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", fontWeight: 500 }}>
+    <Stack gap="md">
+      <Group justify="space-between" wrap="wrap" gap="md">
+        <Group gap="md" align="baseline">
+          <Text fz="xs" c="dimmed" fw={500} tt="uppercase" lts="0.08em">
             Weight over time
-          </span>
-          <span className="serif-it" style={{ color: "var(--ink-3)", fontSize: 14 }}>
+          </Text>
+          <Text c="dimmed" fz="sm">
             {data.length} entries · {range}
-          </span>
-        </div>
-        <div className="range-bar no-scrollbar" role="tablist" aria-label="Time range">
-          {Object.keys(RANGE_DAYS).map((k) => (
-            <button key={k} data-active={range === k} onClick={() => setRange(k)} aria-pressed={range === k}>
-              {k}
-            </button>
-          ))}
-        </div>
-      </div>
+          </Text>
+        </Group>
+        <SegmentedControl
+          size="xs"
+          value={range}
+          onChange={setRange}
+          data={Object.keys(RANGE_DAYS).map((k) => ({ value: k, label: k }))}
+        />
+      </Group>
 
-      <div
-        ref={wrapRef}
-        className="card"
-        style={{ padding: 16, position: "relative", overflow: "hidden" }}
-        onMouseMove={onMove}
-        onMouseLeave={() => setHover(null)}
-      >
-        <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} preserveAspectRatio="none" style={{ display: "block" }}>
-          <defs>
-            <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--sage)" stopOpacity="0.18" />
-              <stop offset="100%" stopColor="var(--sage)" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-
-          {/* Y-grid */}
-          {ticks.map((t, i) => (
-            <g key={i}>
-              <line x1={padX} x2={W - padX} y1={t.y} y2={t.y} stroke="var(--rule-soft)" strokeDasharray={i === 0 || i === ticks.length - 1 ? "0" : "2 4"} strokeWidth="1" />
-              <text x={padX - 6} y={t.y + 4} fontSize="11" textAnchor="end" fill="var(--ink-3)" fontFamily="var(--mono)">
-                {fmtWeight(t.v, units, { dp: 0, unitless: true })}
-              </text>
-            </g>
-          ))}
-
-          {/* Pacing line */}
-          {pacing && (() => {
-            const start = +pacing.startDate;
-            const end = +pacing.targetDate;
-            // Clip to current visible x range
-            const chartStart = Math.max(start, minX);
-            const chartEnd = Math.min(end, maxX);
-            if (chartEnd <= chartStart) return null;
-            const startKgPace = member.startWeightKg + (member.goalWeightKg - member.startWeightKg) * ((chartStart - start) / (end - start));
-            const endKgPace = member.startWeightKg + (member.goalWeightKg - member.startWeightKg) * ((chartEnd - start) / (end - start));
-            const x1 = scaleX(chartStart), x2 = scaleX(chartEnd);
-            const y1 = scaleY(startKgPace), y2 = scaleY(endKgPace);
-            return (
-              <g opacity="0.55">
-                <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--md-on-surface-variant)" strokeWidth="1" strokeDasharray="3 5" />
-                <text x={x2} y={y2 - 6} fontSize="10" textAnchor="end" fill="var(--md-on-surface-variant)" fontFamily="var(--font-mono)" letterSpacing="0.05em">PACE</text>
-              </g>
-            );
-          })()}
-          {/* Goal line */}
-          <line x1={padX} x2={W - padX} y1={goalY} y2={goalY} stroke="var(--terracotta)" strokeWidth="1.2" strokeDasharray="4 4" opacity="0.6" />
-          <text x={W - padX} y={goalY - 6} fontSize="10.5" textAnchor="end" fill="var(--terracotta)" fontFamily="var(--mono)" letterSpacing="0.05em">
-            GOAL · {fmtWeight(member.goalWeightKg, units, { unitless: true })}
-          </text>
-
-          {/* Area + line */}
-          <path d={areaPath} fill="url(#areaFill)" />
-          <path
-            d={linePath}
-            fill="none"
-            stroke="var(--sage)"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{ filter: "drop-shadow(0 1px 0 oklch(0% 0 0 / 0.04))" }}
-          />
-
-          {/* Dots — small */}
-          {points.map((p, i) => (
-            <circle key={i} cx={p[0]} cy={p[1]} r={hover?.idx === i ? 4 : 1.8} fill="var(--card)" stroke="var(--sage)" strokeWidth="1.5" />
-          ))}
-
-          {/* X labels */}
-          {xLabels.map((d, i) => (
-            <text
-              key={i}
-              x={scaleX(+new Date(d.date))}
-              y={H - 8}
-              fontSize="11"
-              textAnchor={i === 0 ? "start" : i === xLabels.length - 1 ? "end" : "middle"}
-              fill="var(--ink-3)"
-              fontFamily="var(--mono)"
-            >
-              {fmtDate(d.date)}
-            </text>
-          ))}
-
-          {/* Hover */}
-          {hover && (
-            <g>
-              <line x1={hover.x} x2={hover.x} y1={padY} y2={H - padY} stroke="var(--ink-3)" strokeWidth="1" strokeDasharray="2 3" opacity="0.5" />
-              <circle cx={hover.x} cy={hover.y} r="6" fill="var(--card)" stroke="var(--sage)" strokeWidth="2" />
-            </g>
-          )}
-        </svg>
-
-        {hover && data[hover.idx] && (
-          <div
-            style={{
-              position: "absolute",
-              left: `${(hover.x / W) * 100}%`,
-              top: 16,
-              transform: "translateX(-50%)",
-              background: "var(--ink)",
-              color: "var(--paper)",
-              padding: "6px 10px",
-              borderRadius: 8,
-              fontSize: 12.5,
-              whiteSpace: "nowrap",
-              pointerEvents: "none",
-              boxShadow: "var(--shadow-md)",
-            }}
-          >
-            <span className="num" style={{ fontWeight: 500 }}>
-              {fmtWeight(data[hover.idx].weightKg, units)}
-            </span>
-            <span style={{ opacity: 0.7, marginLeft: 8 }}>{fmtDate(data[hover.idx].date)}</span>
-          </div>
-        )}
-      </div>
-    </div>
+      <Paper withBorder radius="md" p="md">
+        <LineChart
+          h={height}
+          data={data}
+          dataKey="date"
+          series={[{ name: "weight", color: "github-blue.5", label: `Weight (${unitLabel})` }]}
+          curveType="natural"
+          withDots={data.length < 30}
+          withLegend={false}
+          referenceLines={[
+            {
+              y: goalDisplay,
+              label: `goal · ${goalDisplay.toFixed(1)} ${unitLabel}`,
+              color: "github-red.6",
+            },
+          ]}
+          valueFormatter={(value) => `${value.toFixed(1)} ${unitLabel}`}
+          gridAxis="y"
+          tickLine="none"
+          xAxisProps={{ minTickGap: 50 }}
+        />
+      </Paper>
+    </Stack>
   );
 }
 
-function Sparkline({ entries, width = 100, height = 30, color = "var(--sage)" }) {
+function Sparkline({ entries, width = 100, height = 30, color = "var(--mantine-primary-color-filled)" }) {
   if (entries.length < 2) {
-    return <div style={{ width, height, display: "flex", alignItems: "center", color: "var(--ink-4)", fontSize: 11, fontStyle: "italic", fontFamily: "var(--serif)" }}>just starting</div>;
+    return (
+      <div
+        style={{
+          width,
+          height,
+          display: "flex",
+          alignItems: "center",
+          color: "var(--mantine-color-dimmed)",
+          fontSize: 11,
+          fontStyle: "italic",
+        }}
+      >
+        just starting
+      </div>
+    );
   }
   const sorted = [...entries].sort((a, b) => +new Date(a.date) - +new Date(b.date));
   const ys = sorted.map((e) => e.weightKg);
@@ -1936,175 +1357,197 @@ function Dashboard({ me, entries, units, onLogToday, onEditEntry }) {
   const hour = today.getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
+  const pacingColor = pacing
+    ? pacing.onTrack
+      ? "github-blue"
+      : pacing.aheadDays > 0
+        ? "github-green"
+        : "github-gray"
+    : null;
+
   return (
-    <div style={{ animation: "fadeIn 320ms ease both" }}>
-      {/* Header */}
-      <header style={{ marginBottom: 32 }}>
-        <div style={{ fontSize: 13, color: "var(--ink-3)", letterSpacing: "0.04em" }}>
-          {fmtDateLong(today)}
-        </div>
-        <h1 className="serif" style={{ fontSize: "clamp(32px, 4.6vw, 48px)", fontWeight: 400, letterSpacing: "-0.02em", margin: "8px 0 0 0", lineHeight: 1.1 }}>
-          {greeting}, <span className="serif-it">{me.displayName}.</span>
-        </h1>
-        <p style={{ color: "var(--ink-3)", fontSize: 15, margin: "10px 0 0 0", maxWidth: 520 }}>
+    <Box>
+      <Box mb="xl">
+        <Text fz="sm" c="dimmed">{fmtDateLong(today)}</Text>
+        <Title order={1} fz={{ base: 32, sm: 44 }} fw={500} mt={6} lh={1.1}>
+          {greeting}, {me.displayName}.
+        </Title>
+        <Text c="dimmed" fz="md" mt="sm" maw={520}>
           {loggedToday
             ? "You're set for the day. Quietly progressing."
             : streak.broken
-            ? "A new day, a new entry. Begin again whenever you like."
-            : "When you're ready, log today's weight below."}
-        </p>
-      </header>
+              ? "A new day, a new entry. Begin again whenever you like."
+              : "When you're ready, log today's weight below."}
+        </Text>
+      </Box>
 
-      {!dismissedMonth && <FirstOfMonthCard me={me} entries={entries} units={units} onDismiss={() => setDismissedMonth(true)} />}
-
-      {pacing && (
-        <div className="card" style={{ padding: "14px 18px", marginBottom: 18, display: "flex", alignItems: "center", gap: 14, background: "var(--md-surface-container-low)", borderLeft: `3px solid ${pacing.onTrack ? "var(--md-primary)" : pacing.aheadDays > 0 ? "var(--md-tertiary)" : "var(--md-secondary)"}` }}>
-          <span className="material-symbols-outlined" style={{ color: "var(--md-on-surface-variant)", fontSize: 22 }}>{pacing.onTrack ? "schedule" : pacing.aheadDays > 0 ? "trending_down" : "rocket_launch"}</span>
-          <div style={{ flex: 1, fontSize: 13.5, color: "var(--md-on-surface)" }}>
-            {pacing.onTrack
-              ? <>You're <span style={{ fontWeight: 500 }}>on pace</span> for your target date.</>
-              : pacing.aheadDays > 0
-              ? <><span style={{ fontWeight: 500 }} className="num">{pacing.aheadDays}</span> day{pacing.aheadDays === 1 ? "" : "s"} ahead of pace{pacing.projectedDate && <> · projected goal {fmtDate(pacing.projectedDate)}</>}</>
-              : <><span style={{ fontWeight: 500 }} className="num">{Math.abs(pacing.aheadDays)}</span> day{pacing.aheadDays === -1 ? "" : "s"} behind pace{pacing.projectedDate && <> · projected goal {fmtDate(pacing.projectedDate)}</>}</>}
-          </div>
-        </div>
+      {!dismissedMonth && (
+        <FirstOfMonthCard
+          me={me}
+          entries={entries}
+          units={units}
+          onDismiss={() => setDismissedMonth(true)}
+        />
       )}
 
-      {/* Top row */}
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 18, marginBottom: 18 }}>
-        <div className="card" style={{ padding: 24, gridColumn: "auto / span 1" }}>
-          <Stat
-            label="Current weight"
-            value={
-              <span>
-                <span className="num">{fmtWeight(latest.weightKg, units, { unitless: true })}</span>
-                <span style={{ fontFamily: "var(--mono)", fontSize: 18, color: "var(--ink-3)", marginLeft: 6, letterSpacing: 0 }}>
-                  {units === "imperial" ? "lb" : "kg"}
-                </span>
-              </span>
-            }
-            sub={
-              previous ? (
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                  {dayDelta > 0 ? <Icon.Up /> : dayDelta < 0 ? <Icon.Down /> : null}
-                  <span className="num">{fmtDelta(dayDelta, units)}</span> from last entry
-                </span>
-              ) : null
-            }
-            large
-          />
-        </div>
-
-        <div className="card" style={{ padding: 24 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <span style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", fontWeight: 500 }}>
-              Streak
-            </span>
-            {!streak.broken && streak.length >= 7 && (
-              <span className="chip chip-sage"><Icon.Flame /> on a roll</span>
+      {pacing && (
+        <Paper
+          withBorder
+          radius="md"
+          p="md"
+          mb="md"
+          style={{ borderLeft: `3px solid var(--mantine-color-${pacingColor}-filled)` }}
+        >
+          <Text fz="sm">
+            {pacing.onTrack ? (
+              <>
+                You're <Text component="span" fw={500}>on pace</Text> for your target date.
+              </>
+            ) : pacing.aheadDays > 0 ? (
+              <>
+                <Text component="span" fw={500}>{pacing.aheadDays}</Text>{" "}
+                day{pacing.aheadDays === 1 ? "" : "s"} ahead of pace
+                {pacing.projectedDate && <> · projected goal {fmtDate(pacing.projectedDate)}</>}
+              </>
+            ) : (
+              <>
+                <Text component="span" fw={500}>{Math.abs(pacing.aheadDays)}</Text>{" "}
+                day{pacing.aheadDays === -1 ? "" : "s"} behind pace
+                {pacing.projectedDate && <> · projected goal {fmtDate(pacing.projectedDate)}</>}
+              </>
             )}
-          </div>
-          <div style={{ fontFamily: "var(--serif)", fontSize: 44, fontWeight: 400, lineHeight: 1.05, letterSpacing: "-0.02em" }}>
-            <span className="num">{streak.length}</span>
-            <span className="serif-it" style={{ fontSize: 22, color: "var(--ink-3)", marginLeft: 8 }}>
+          </Text>
+        </Paper>
+      )}
+
+      <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md" mb="md">
+        <Paper withBorder radius="md" p="lg">
+          <Text fz="xs" c="dimmed" fw={500} tt="uppercase" lts="0.08em">
+            Current weight
+          </Text>
+          <Group gap={6} align="baseline" mt="xs">
+            <Title order={2} fz={44} fw={500} lh={1.05} style={{ fontVariantNumeric: "tabular-nums" }}>
+              {fmtWeight(latest.weightKg, units, { unitless: true })}
+            </Title>
+            <Text ff="monospace" fz="lg" c="dimmed">
+              {units === "imperial" ? "lb" : "kg"}
+            </Text>
+          </Group>
+          {previous && (
+            <Text c="dimmed" fz="sm" mt={6}>
+              <Text component="span" style={{ fontVariantNumeric: "tabular-nums" }}>
+                {fmtDelta(dayDelta, units)}
+              </Text>{" "}
+              from last entry
+            </Text>
+          )}
+        </Paper>
+
+        <Paper withBorder radius="md" p="lg">
+          <Group justify="space-between" align="center" mb="xs">
+            <Text fz="xs" c="dimmed" fw={500} tt="uppercase" lts="0.08em">
+              Streak
+            </Text>
+            {!streak.broken && streak.length >= 7 && (
+              <Badge
+                size="sm"
+                variant="light"
+                color="github-green"
+                leftSection={<IconFlame size={12} />}
+              >
+                on a roll
+              </Badge>
+            )}
+          </Group>
+          <Group gap={8} align="baseline">
+            <Title order={2} fz={44} fw={500} lh={1.05} style={{ fontVariantNumeric: "tabular-nums" }}>
+              {streak.length}
+            </Title>
+            <Text c="dimmed" fz="lg">
               {streak.length === 1 ? "day" : "days"}
-            </span>
-          </div>
-          <div style={{ fontSize: 12.5, color: "var(--ink-3)", marginTop: 6 }}>
+            </Text>
+          </Group>
+          <Text c="dimmed" fz="sm" mt={6}>
             {streak.broken
               ? `Last entry ${fmtDate(streak.lastEntry.date, { relative: true })}.`
               : streak.lastEntry
-              ? `Last logged ${fmtDate(streak.lastEntry.date, { relative: true }).toLowerCase()}.`
-              : "Start with today."}
-          </div>
-        </div>
+                ? `Last logged ${fmtDate(streak.lastEntry.date, { relative: true }).toLowerCase()}.`
+                : "Start with today."}
+          </Text>
+        </Paper>
 
-        <div className="card" style={{ padding: 24 }}>
-          <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", fontWeight: 500, marginBottom: 10 }}>
+        <Paper withBorder radius="md" p="lg">
+          <Text fz="xs" c="dimmed" fw={500} tt="uppercase" lts="0.08em" mb="sm">
             Toward goal
-          </div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 12 }}>
-            <span className="serif num" style={{ fontSize: 36, letterSpacing: "-0.02em" }}>
+          </Text>
+          <Group gap="xs" align="baseline" mb="sm">
+            <Title order={2} fz={36} fw={500} style={{ fontVariantNumeric: "tabular-nums" }}>
               {Math.round(progress * 100)}%
-            </span>
-            <span className="serif-it" style={{ color: "var(--ink-3)", fontSize: 14 }}>
-              of the way there
-            </span>
-          </div>
+            </Title>
+            <Text c="dimmed" fz="sm">of the way there</Text>
+          </Group>
           <ProgressBar fraction={progress} />
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, fontSize: 12, color: "var(--ink-3)" }}>
-            <span className="num mono">start {fmtWeight(me.startWeightKg, units, { unitless: true })}</span>
-            <span className="num mono">{Math.abs(fromGoal) < 0.1 ? "at goal" : `${fmtDelta(fromGoal, units)} to go`}</span>
-            <span className="num mono">goal {fmtWeight(me.goalWeightKg, units, { unitless: true })}</span>
-          </div>
-        </div>
-      </section>
+          <Group justify="space-between" mt="sm" gap="xs">
+            <Text c="dimmed" fz="xs" ff="monospace">
+              start {fmtWeight(me.startWeightKg, units, { unitless: true })}
+            </Text>
+            <Text c="dimmed" fz="xs" ff="monospace">
+              {Math.abs(fromGoal) < 0.1 ? "at goal" : `${fmtDelta(fromGoal, units)} to go`}
+            </Text>
+            <Text c="dimmed" fz="xs" ff="monospace">
+              goal {fmtWeight(me.goalWeightKg, units, { unitless: true })}
+            </Text>
+          </Group>
+        </Paper>
+      </SimpleGrid>
 
-      {/* Chart */}
-      <section style={{ marginBottom: 28 }}>
+      <Box mb="xl">
         <WeightChart entries={myEntries} member={me} units={units} pacing={pacing} />
-      </section>
+      </Box>
 
-      {/* Derived stats */}
-      <section style={{ marginBottom: 28 }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 14 }}>
-          <h2 className="serif" style={{ fontSize: 22, fontWeight: 400, margin: 0, letterSpacing: "-0.01em" }}>
-            <span className="serif-it">Derived</span> stats
-          </h2>
-          <span style={{ color: "var(--ink-3)", fontSize: 12.5 }}>estimated from your latest entry</span>
-        </div>
-        <div className="card" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))" }}>
+      <Stack gap="sm" mb="xl">
+        <Group gap="md" align="baseline">
+          <Title order={2} fz={22} fw={500}>Derived stats</Title>
+          <Text c="dimmed" fz="sm">estimated from your latest entry</Text>
+        </Group>
+        <SimpleGrid cols={{ base: 2, sm: 3, lg: 5 }} spacing="md">
           {[
             { label: "BMI", value: bmi?.toFixed(1), sub: bmiCategory(bmi) },
             { label: "BMR", value: Math.round(bmr), sub: "kcal at rest" },
             { label: "TDEE", value: Math.round(tdee), sub: "kcal estimated" },
-            { label: "Body-fat est.", value: bf?.toFixed(1) + "%", sub: "Deurenberg" },
-            { label: "Ideal weight", value: fmtWeight(ideal, units, { unitless: true }), sub: units === "imperial" ? "lb · Robinson" : "kg · Robinson" },
-          ].map((s, i, arr) => (
-            <div key={s.label} style={{
-              padding: "20px 24px",
-              borderRight: i < arr.length - 1 ? "1px solid var(--rule-soft)" : "none",
-              borderBottom: "none",
-            }}>
-              <Stat {...s} />
-            </div>
+            { label: "Body-fat est.", value: bf ? `${bf.toFixed(1)}%` : "—", sub: "Deurenberg" },
+            {
+              label: "Ideal weight",
+              value: fmtWeight(ideal, units, { unitless: true }),
+              sub: units === "imperial" ? "lb · Robinson" : "kg · Robinson",
+            },
+          ].map((s) => (
+            <Box key={s.label}>
+              <Text fz="xs" c="dimmed" fw={500} tt="uppercase" lts="0.08em">
+                {s.label}
+              </Text>
+              <Text fz={22} fw={500} mt={4} style={{ fontVariantNumeric: "tabular-nums" }}>
+                {s.value ?? "—"}
+              </Text>
+              {s.sub && (
+                <Text c="dimmed" fz="xs" mt={2}>{s.sub}</Text>
+              )}
+            </Box>
           ))}
-        </div>
-      </section>
+        </SimpleGrid>
+      </Stack>
 
-      {/* FAB */}
-      <button
-        onClick={onLogToday}
-        className="focus-ring"
-        style={{
-          position: "fixed",
-          right: 24,
-          bottom: "calc(env(safe-area-inset-bottom, 0px) + 96px)",
-          background: "var(--md-primary-container)",
-          color: "var(--md-on-primary-container)",
-          border: 0,
-          borderRadius: 16,
-          padding: "0 20px",
-          height: 56,
-          fontSize: 14,
-          fontWeight: 500,
-          letterSpacing: "0.1px",
-          fontFamily: "var(--sans)",
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 12,
-          cursor: "pointer",
-          boxShadow: "var(--md-elev-3)",
-          zIndex: 50,
-          transition: "box-shadow 200ms ease, transform 160ms ease",
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "var(--md-elev-4)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "var(--md-elev-3)"; }}
-      >
-        <span className="material-symbols-outlined" style={{ fontSize: 20 }}>{loggedToday ? "edit" : "add"}</span>
-        {loggedToday ? "Edit today's entry" : "Log today's weight"}
-      </button>
-    </div>
+      <Affix position={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 96px)", right: 24 }} zIndex={50}>
+        <Button
+          size="lg"
+          radius="lg"
+          leftSection={loggedToday ? <IconPencil size={18} /> : <IconPlus size={18} />}
+          onClick={onLogToday}
+        >
+          {loggedToday ? "Edit today's entry" : "Log today's weight"}
+        </Button>
+      </Affix>
+    </Box>
   );
 }
 
@@ -2150,127 +1593,155 @@ function EntriesScreen({ me, entries, units, onEdit, onBackfill }) {
   }, [myEntries]);
 
   return (
-    <div style={{ animation: "fadeIn 320ms ease both" }}>
-      <header style={{ marginBottom: 22 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-          <h1 className="serif" style={{ fontSize: "clamp(28px, 3.6vw, 40px)", fontWeight: 400, margin: 0, letterSpacing: "-0.02em" }}>
-            <span className="serif-it">Entries</span>
-          </h1>
-          <button className="btn" onClick={() => onBackfill()}>
-            <Icon.Plus /> Backfill a day
-          </button>
-        </div>
-        <p style={{ color: "var(--ink-3)", fontSize: 14, margin: "6px 0 0 0" }}>
+    <Box>
+      <Stack gap="md" mb="xl">
+        <Group justify="space-between" wrap="wrap" gap="md">
+          <Title order={1} fz={{ base: 28, sm: 36 }} fw={500}>Entries</Title>
+          <Button
+            variant="default"
+            leftSection={<IconPlus size={16} />}
+            onClick={() => onBackfill()}
+          >
+            Backfill a day
+          </Button>
+        </Group>
+        <Text c="dimmed" fz="sm">
           {myEntries.length} entries · backfill any day that's missing.
-        </p>
-        <div style={{ marginTop: 18 }}>
-          <div className="range-bar" role="tablist" aria-label="Entries view">
-            <button role="tab" aria-selected={view === "list"} data-active={view === "list"} onClick={() => setView("list")}>List</button>
-            <button role="tab" aria-selected={view === "calendar"} data-active={view === "calendar"} onClick={() => setView("calendar")}>Calendar</button>
-          </div>
-        </div>
-      </header>
+        </Text>
+        <SegmentedControl
+          value={view}
+          onChange={setView}
+          data={[
+            { value: "list", label: "List" },
+            { value: "calendar", label: "Calendar" },
+          ]}
+          maw={240}
+        />
+      </Stack>
 
-      {view === "list" && Object.entries(groups).map(([month, list]) => (
-        <section key={month} style={{ marginBottom: 36 }}>
-          <h2 className="serif-it" style={{ fontSize: 14, fontWeight: 400, color: "var(--ink-3)", letterSpacing: "0.04em", margin: "0 0 12px 4px" }}>
-            {month}
-          </h2>
-          <div className="card">
-            {list.map((e, i) => {
-              const next = list[i + 1];
-              const delta = next ? e.weightKg - next.weightKg : null;
-              const isOpen = confirmDelete === e.id;
-              return (
-                <article
-                  key={e.id}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "auto 1fr auto",
-                    alignItems: "center",
-                    gap: 16,
-                    padding: "16px 22px",
-                    borderBottom: i < list.length - 1 ? "1px solid var(--rule-soft)" : "none",
-                    transition: "background 160ms ease",
-                  }}
-                  onMouseEnter={(ev) => ev.currentTarget.style.background = "var(--paper-2)"}
-                  onMouseLeave={(ev) => ev.currentTarget.style.background = "transparent"}
-                >
-                  <div style={{ minWidth: 90 }}>
-                    <div className="serif" style={{ fontSize: 22, lineHeight: 1.1, color: "var(--ink)" }}>
-                      {new Date(e.date).getDate()}
-                    </div>
-                    <div style={{ fontSize: 11, color: "var(--ink-3)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                      {new Date(e.date).toLocaleDateString("en-US", { weekday: "short" })}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
-                      <span className="num serif" style={{ fontSize: 22, color: "var(--ink)" }}>
-                        {fmtWeight(e.weightKg, units, { unitless: true })}
-                        <span style={{ fontFamily: "var(--mono)", fontSize: 13, color: "var(--ink-3)", marginLeft: 4 }}>
-                          {units === "imperial" ? "lb" : "kg"}
-                        </span>
-                      </span>
-                      {delta != null && Math.abs(delta) > 0.05 && (
-                        <span className="num mono" style={{
-                          fontSize: 12,
-                          color: delta < 0 ? "var(--sage-2)" : "var(--terracotta)",
-                          background: delta < 0 ? "var(--sage-tint)" : "var(--terracotta-tint)",
-                          padding: "2px 8px",
-                          borderRadius: 999,
-                        }}>
-                          {fmtDelta(delta, units)}
-                        </span>
-                      )}
-                      {e.bodyFatPct && (
-                        <span className="chip num mono">{e.bodyFatPct}% bf</span>
-                      )}
-                      {e.waistCm && (
-                        <span className="chip num mono">{units === "imperial" ? `${cmToIn(e.waistCm).toFixed(1)} in waist` : `${e.waistCm} cm waist`}</span>
-                      )}
-                    </div>
-                    {e.note && (
-                      <div className="serif-it" style={{ color: "var(--ink-3)", fontSize: 14, marginTop: 4 }}>
-                        “{e.note}”
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                    {!isOpen ? (
-                      <>
-                        <IconBtn label={`Edit entry on ${fmtDate(e.date)}`} onClick={() => onEdit(e)}>
-                          <Icon.Pencil />
-                        </IconBtn>
-                        <IconBtn label={`Delete entry on ${fmtDate(e.date)}`} danger onClick={() => setConfirmDelete(e.id)}>
-                          <Icon.Trash />
-                        </IconBtn>
-                      </>
-                    ) : (
-                      <div style={{ display: "flex", alignItems: "center", gap: 4, animation: "fadeIn 160ms ease both" }}>
-                        <span className="serif-it" style={{ fontSize: 13, color: "var(--ink-3)", marginRight: 6 }}>delete?</span>
-                        <button
-                          className="btn-ghost focus-ring"
-                          onClick={async () => { await db.deleteEntry(e.id); setConfirmDelete(null); }}
-                          style={{ padding: "6px 12px", border: "1px solid var(--terracotta)", color: "var(--terracotta)", background: "transparent", borderRadius: 999, fontSize: 13, cursor: "pointer" }}
-                        >
-                          yes, delete
-                        </button>
-                        <IconBtn label="Cancel" onClick={() => setConfirmDelete(null)}>
-                          <Icon.X />
-                        </IconBtn>
-                      </div>
-                    )}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-      ))}
+      {view === "list" &&
+        Object.entries(groups).map(([month, list]) => (
+          <Stack key={month} gap="xs" mb="xl">
+            <Text c="dimmed" fz="sm" fw={500} ml={4}>
+              {month}
+            </Text>
+            <Paper withBorder radius="md">
+              {list.map((e, i) => {
+                const next = list[i + 1];
+                const delta = next ? e.weightKg - next.weightKg : null;
+                const isOpen = confirmDelete === e.id;
+                return (
+                  <Box key={e.id}>
+                    <Group
+                      align="center"
+                      justify="space-between"
+                      gap="md"
+                      px="lg"
+                      py="md"
+                      wrap="nowrap"
+                    >
+                      <Box miw={64}>
+                        <Title order={3} fz={22} fw={500} lh={1.1}>
+                          {new Date(e.date).getDate()}
+                        </Title>
+                        <Text fz={11} c="dimmed" tt="uppercase" lts="0.06em">
+                          {new Date(e.date).toLocaleDateString("en-US", { weekday: "short" })}
+                        </Text>
+                      </Box>
+                      <Box style={{ flex: 1, minWidth: 0 }}>
+                        <Group gap="sm" wrap="wrap" align="baseline">
+                          <Text fz={22} fw={500} style={{ fontVariantNumeric: "tabular-nums" }}>
+                            {fmtWeight(e.weightKg, units, { unitless: true })}
+                            <Text component="span" ff="monospace" fz={13} c="dimmed" ml={4}>
+                              {units === "imperial" ? "lb" : "kg"}
+                            </Text>
+                          </Text>
+                          {delta != null && Math.abs(delta) > 0.05 && (
+                            <Badge
+                              size="sm"
+                              variant="light"
+                              color={delta < 0 ? "github-green" : "github-red"}
+                            >
+                              {fmtDelta(delta, units)}
+                            </Badge>
+                          )}
+                          {e.bodyFatPct && (
+                            <Badge size="sm" variant="default">{e.bodyFatPct}% bf</Badge>
+                          )}
+                          {e.waistCm && (
+                            <Badge size="sm" variant="default">
+                              {units === "imperial"
+                                ? `${cmToIn(e.waistCm).toFixed(1)} in waist`
+                                : `${e.waistCm} cm waist`}
+                            </Badge>
+                          )}
+                        </Group>
+                        {e.note && (
+                          <Text fz="sm" c="dimmed" fs="italic" mt={4}>
+                            “{e.note}”
+                          </Text>
+                        )}
+                      </Box>
+                      <Group gap={4} wrap="nowrap">
+                        {!isOpen ? (
+                          <>
+                            <Tooltip label="Edit entry">
+                              <ActionIcon
+                                variant="subtle"
+                                color="gray"
+                                onClick={() => onEdit(e)}
+                                aria-label={`Edit entry on ${fmtDate(e.date)}`}
+                              >
+                                <IconPencil size={16} />
+                              </ActionIcon>
+                            </Tooltip>
+                            <Tooltip label="Delete entry">
+                              <ActionIcon
+                                variant="subtle"
+                                color="red"
+                                onClick={() => setConfirmDelete(e.id)}
+                                aria-label={`Delete entry on ${fmtDate(e.date)}`}
+                              >
+                                <IconTrash size={16} />
+                              </ActionIcon>
+                            </Tooltip>
+                          </>
+                        ) : (
+                          <Group gap={4} wrap="nowrap">
+                            <Text fz="sm" c="dimmed">delete?</Text>
+                            <Button
+                              size="compact-sm"
+                              color="red"
+                              variant="outline"
+                              onClick={async () => {
+                                await db.deleteEntry(e.id);
+                                setConfirmDelete(null);
+                              }}
+                            >
+                              yes, delete
+                            </Button>
+                            <ActionIcon
+                              variant="subtle"
+                              color="gray"
+                              onClick={() => setConfirmDelete(null)}
+                              aria-label="Cancel delete"
+                            >
+                              <IconX size={16} />
+                            </ActionIcon>
+                          </Group>
+                        )}
+                      </Group>
+                    </Group>
+                    {i < list.length - 1 && <Divider />}
+                  </Box>
+                );
+              })}
+            </Paper>
+          </Stack>
+        ))}
 
       {view === "calendar" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%", maxWidth: 460, marginLeft: "auto", marginRight: "auto" }}>
+        <Stack gap="xl" maw={460} mx="auto">
           {calMonths.map((monthDate) => {
             const today = window.__fixtures.today;
             const monthName = monthDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -2281,7 +1752,6 @@ function EntriesScreen({ me, entries, units, onEdit, onBackfill }) {
               const d = new Date(e.date);
               return d.getFullYear() === monthDate.getFullYear() && d.getMonth() === monthDate.getMonth();
             });
-            // Days that are "expected" (past or today, this month)
             let expectedDays = 0;
             for (let dn = 1; dn <= daysInMonth; dn++) {
               const d = new Date(monthDate.getFullYear(), monthDate.getMonth(), dn);
@@ -2289,37 +1759,48 @@ function EntriesScreen({ me, entries, units, onEdit, onBackfill }) {
             }
             const missed = expectedDays - monthEntries.length;
             return (
-              <section key={monthName}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", margin: "0 4px 12px" }}>
-                  <h2 className="serif-it" style={{ fontSize: 14, fontWeight: 400, color: "var(--ink-3)", letterSpacing: "0.04em", margin: 0 }}>
-                    {monthName}
-                  </h2>
-                  <div style={{ fontSize: 11, color: "var(--ink-3)", letterSpacing: "0.04em" }}>
-                    <span className="num mono" style={{ color: "var(--md-on-surface)" }}>{monthEntries.length}</span> logged
-                    {missed > 0 && <> · <span className="num mono">{missed}</span> missed</>}
-                  </div>
-                </div>
-                <div className="card" style={{ padding: 12 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 6 }}>
-                    {["S","M","T","W","T","F","S"].map((d, i) => (
-                      <div key={i} style={{ fontSize: 10, textAlign: "center", color: "var(--ink-3)", letterSpacing: "0.06em", textTransform: "uppercase" }}>{d}</div>
+              <Stack key={monthName} gap="xs">
+                <Group justify="space-between" align="baseline" px={4}>
+                  <Text c="dimmed" fz="sm" fw={500}>{monthName}</Text>
+                  <Text c="dimmed" fz={11}>
+                    <Text component="span" ff="monospace">{monthEntries.length}</Text> logged
+                    {missed > 0 && (
+                      <>
+                        {" · "}
+                        <Text component="span" ff="monospace">{missed}</Text> missed
+                      </>
+                    )}
+                  </Text>
+                </Group>
+                <Paper withBorder radius="md" p="xs">
+                  <SimpleGrid cols={7} spacing={4} mb={6}>
+                    {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+                      <Text
+                        key={i}
+                        ta="center"
+                        fz={10}
+                        c="dimmed"
+                        tt="uppercase"
+                        lts="0.06em"
+                      >
+                        {d}
+                      </Text>
                     ))}
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
+                  </SimpleGrid>
+                  <SimpleGrid cols={7} spacing={4}>
                     {Array.from({ length: totalCells }).map((_, idx) => {
                       const dn = idx - startOffset + 1;
-                      if (dn < 1 || dn > daysInMonth) return <div key={idx} />;
+                      if (dn < 1 || dn > daysInMonth) return <Box key={idx} />;
                       const date = new Date(monthDate.getFullYear(), monthDate.getMonth(), dn);
-                      const dateKey = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(dn).padStart(2,"0")}`;
+                      const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(dn).padStart(2, "0")}`;
                       const entry = entryByDate[dateKey];
                       const isToday = date.toDateString() === today.toDateString();
                       const isFuture = +date > +today;
                       const logged = !!entry;
                       const display = entry ? fmtWeight(entry.weightKg, units, { unitless: true }) : null;
                       return (
-                        <button
+                        <UnstyledButton
                           key={idx}
-                          className="focus-ring"
                           disabled={isFuture}
                           onClick={() => {
                             if (isFuture) return;
@@ -2329,1063 +1810,970 @@ function EntriesScreen({ me, entries, units, onEdit, onBackfill }) {
                           title={entry ? `Edit ${fmtDate(date)}` : isFuture ? "" : `Log ${fmtDate(date)}`}
                           style={{
                             aspectRatio: "1 / 1",
-                            border: isToday ? "1.5px solid var(--md-primary)" : "1px solid var(--rule-soft)",
-                            background: logged ? "var(--md-secondary-container)" : "transparent",
-                            color: logged ? "var(--md-on-secondary-container)" : isFuture ? "var(--md-outline)" : "var(--ink-2)",
+                            border: isToday
+                              ? "1.5px solid var(--mantine-primary-color-filled)"
+                              : "1px solid var(--mantine-color-default-border)",
+                            background: logged
+                              ? "var(--mantine-color-github-blue-light)"
+                              : "transparent",
+                            color: logged
+                              ? "var(--mantine-color-github-blue-light-color)"
+                              : "var(--mantine-color-dimmed)",
                             opacity: isFuture ? 0.4 : 1,
                             borderRadius: 6,
                             padding: 2,
                             cursor: isFuture ? "default" : "pointer",
-                            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1,
-                            transition: "background 140ms ease, transform 120ms ease",
-                            fontFamily: "var(--sans)",
-                            position: "relative",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 1,
+                            transition: "background 140ms ease",
                           }}
-                          onMouseEnter={(ev) => { if (!isFuture && !logged) ev.currentTarget.style.background = "var(--paper-2)"; }}
-                          onMouseLeave={(ev) => { if (!isFuture && !logged) ev.currentTarget.style.background = "transparent"; }}
                         >
-                          <span className="num" style={{ fontSize: 11, fontWeight: logged ? 500 : 400, lineHeight: 1 }}>{dn}</span>
+                          <Text
+                            fz={11}
+                            fw={logged ? 500 : 400}
+                            lh={1}
+                            style={{ fontVariantNumeric: "tabular-nums" }}
+                          >
+                            {dn}
+                          </Text>
                           {display && (
-                            <span className="num mono" style={{ fontSize: 8.5, opacity: 0.85, lineHeight: 1 }}>{display}</span>
+                            <Text
+                              ff="monospace"
+                              fz={8.5}
+                              lh={1}
+                              opacity={0.85}
+                              style={{ fontVariantNumeric: "tabular-nums" }}
+                            >
+                              {display}
+                            </Text>
                           )}
-                        </button>
+                        </UnstyledButton>
                       );
                     })}
-                  </div>
-                </div>
-              </section>
+                  </SimpleGrid>
+                </Paper>
+              </Stack>
             );
           })}
-        </div>
+        </Stack>
       )}
-    </div>
+    </Box>
   );
 }
 
 // ---------- Household ----------
-function HouseholdScreen({ me, members, entries, units, onTogglePrivacy, onAddMember }) {
-  return (
-    <div style={{ animation: "fadeIn 320ms ease both" }}>
-      <header style={{ marginBottom: 28 }}>
-        <h1 className="serif" style={{ fontSize: "clamp(28px, 3.6vw, 40px)", fontWeight: 400, margin: 0, letterSpacing: "-0.02em" }}>
-          <span className="serif-it">The</span> household
-        </h1>
-        <p style={{ color: "var(--ink-3)", fontSize: 14, margin: "6px 0 0 0", maxWidth: 540 }}>
-          Everyone's quiet progress, in one view. Exact numbers stay private unless a member chooses to share them.
-        </p>
-        {onAddMember && (
-          <button className="btn btn-tonal" onClick={onAddMember} style={{ marginTop: 14 }}>
-            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>person_add</span> Add a member
-          </button>
-        )}
-      </header>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 18 }}>
-        {members.map((m) => {
-          const memberEntries = entries.filter((e) => e.memberId === m.id);
-          const sorted = [...memberEntries].sort((a, b) => +new Date(b.date) - +new Date(a.date));
-          const latest = sorted[0];
-          const streak = calcStreak(memberEntries, m.resetGracePeriodDays);
-          const progress = progressFraction(m, latest?.weightKg);
-          const trend = trendDirection(memberEntries, 14);
-          const broken = streak.broken;
-          const isMe = m.id === me.id;
-          const showDetails = m.shareDetails || isMe;
-          const sinceLast = streak.lastEntry ? Math.floor((+window.__fixtures.today - +new Date(streak.lastEntry.date)) / 86400000) : null;
-
-          return (
-            <article
-              key={m.id}
-              className="card"
-              style={{
-                padding: 22,
-                opacity: broken ? 0.66 : 1,
-                position: "relative",
-                transition: "opacity 200ms ease, transform 200ms ease",
-              }}
-            >
-              {isMe && (
-                <span className="chip" style={{ position: "absolute", top: 14, right: 14, fontSize: 10.5 }}>you</span>
-              )}
-              <header style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
-                <Avatar member={m} size={48} />
-                <div>
-                  <div className="serif" style={{ fontSize: 22, lineHeight: 1.1, letterSpacing: "-0.01em" }}>
-                    {m.displayName}
-                  </div>
-                  <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2, display: "flex", alignItems: "center", gap: 8 }}>
-                    {broken ? (
-                      <span className="chip chip-warn" style={{ fontSize: 10.5 }}>streak reset · {sinceLast}d ago</span>
-                    ) : streak.length > 0 ? (
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                        <Icon.Flame /> <span className="num mono">{streak.length}</span>-day streak
-                      </span>
-                    ) : (
-                      <span className="serif-it">just starting out</span>
-                    )}
-                    {!showDetails && !isMe && (
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: "var(--ink-4)" }}>
-                        <Icon.Lock /> private
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </header>
-
-              {/* Progress block */}
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-                  <span style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", fontWeight: 500 }}>
-                    Toward goal
-                  </span>
-                  <span className="serif" style={{ fontSize: 18 }}>
-                    <span className="num">{Math.round(progress * 100)}</span>
-                    <span style={{ fontSize: 13, color: "var(--ink-3)" }}>%</span>
-                  </span>
-                </div>
-                <ProgressBar fraction={progress} />
-              </div>
-
-              {/* Detail / private */}
-              {showDetails ? (
-                <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 14, marginBottom: 14 }}>
-                  <div>
-                    <div style={{ fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", fontWeight: 500 }}>Now</div>
-                    <div className="num serif" style={{ fontSize: 20 }}>
-                      {fmtWeight(latest?.weightKg, units, { unitless: true })}
-                      <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--ink-3)", marginLeft: 4 }}>
-                        {units === "imperial" ? "lb" : "kg"}
-                      </span>
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", fontWeight: 500 }}>Goal</div>
-                    <div className="num serif" style={{ fontSize: 20, color: "var(--ink-2)" }}>
-                      {fmtWeight(m.goalWeightKg, units, { unitless: true })}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", fontWeight: 500 }}>BMI</div>
-                    <div className="num serif" style={{ fontSize: 20 }}>{calcBMI(latest?.weightKg, m.heightCm)?.toFixed(1)}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", fontWeight: 500 }}>14-day</div>
-                    <div className="num serif" style={{ fontSize: 20, color: trend.direction === "down" ? "var(--sage-2)" : trend.direction === "up" ? "var(--terracotta)" : "var(--ink-2)" }}>
-                      {fmtDelta(trend.deltaKg, units)}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ marginBottom: 14, padding: "12px 14px", background: "var(--paper-2)", borderRadius: 12, fontSize: 13, color: "var(--ink-3)" }}>
-                  <div className="serif-it">Sharing relative progress only.</div>
-                  <div style={{ marginTop: 4, fontSize: 12 }}>
-                    {trend.direction === "down" ? "Trending downward" : trend.direction === "up" ? "Trending upward" : "Holding steady"} this fortnight.
-                  </div>
-                </div>
-              )}
-
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--rule-soft)", paddingTop: 14 }}>
-                <Sparkline entries={memberEntries} width={120} height={28} />
-                {isMe && (
-                  <button
-                    className="btn-ghost focus-ring"
-                    onClick={onTogglePrivacy}
-                    style={{ padding: "4px 10px", border: 0, background: "transparent", color: "var(--ink-3)", fontSize: 12, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}
-                  >
-                    <Icon.Lock />
-                    {m.shareDetails ? "Sharing details" : "Hiding details"}
-                  </button>
-                )}
-              </div>
-            </article>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ---------- Profile & Settings ----------
+// ---------- Profile ----------
 function ProfileScreen({ me, units, theme, onUpdate, onUnits, onTheme }) {
   const [form, setForm] = useState({ ...me });
   const [savedAt, setSavedAt] = useState(null);
 
   function update(patch) {
-    const next = { ...form, ...patch };
-    setForm(next);
+    setForm((prev) => ({ ...prev, ...patch }));
     onUpdate(patch);
     setSavedAt(Date.now());
   }
 
   function updateUnits(value) {
+    if (!value) return;
     onUnits(value);
     update({ units: value });
   }
 
   function updateTheme(value) {
+    if (!value) return;
     onTheme(value);
     update({ theme: value });
   }
 
-  const goalKgInput = units === "imperial" ? kgToLb(form.goalWeightKg) : form.goalWeightKg;
-  const heightInput = units === "imperial" ? cmToIn(form.heightCm) : form.heightCm;
+  const goalKgDisplay = units === "imperial" ? kgToLb(form.goalWeightKg) : form.goalWeightKg;
+  const heightDisplay = units === "imperial" ? cmToIn(form.heightCm) : form.heightCm;
+  const targetDateValue = form.targetDate ? new Date(form.targetDate) : null;
+
+  function ProfileSection({ title, subtitle, children }) {
+    return (
+      <Stack gap="sm" mb="xl">
+        <Box>
+          <Title order={2} fz={22} fw={500}>{title}</Title>
+          {subtitle && (
+            <Text c="dimmed" fz="sm" mt={4}>{subtitle}</Text>
+          )}
+        </Box>
+        <Paper withBorder radius="md" p="lg">{children}</Paper>
+      </Stack>
+    );
+  }
 
   return (
-    <div style={{ animation: "fadeIn 320ms ease both" }}>
-      <header style={{ marginBottom: 28 }}>
-        <h1 className="serif" style={{ fontSize: "clamp(28px, 3.6vw, 40px)", fontWeight: 400, margin: 0, letterSpacing: "-0.02em" }}>
-          <span className="serif-it">Profile</span> & settings
-        </h1>
-        <p style={{ color: "var(--ink-3)", fontSize: 14, margin: "6px 0 0 0" }}>
-          Change anything below. It saves as you go.
-          {savedAt && <span className="serif-it" style={{ marginLeft: 10, color: "var(--sage-2)" }}>· saved</span>}
-        </p>
-      </header>
+    <Box>
+      <Box mb="xl">
+        <Title order={1} fz={{ base: 28, sm: 36 }} fw={500}>
+          Profile &amp; settings
+        </Title>
+        <Group gap={8} mt={4}>
+          <Text c="dimmed" fz="sm">Change anything below. It saves as you go.</Text>
+          {savedAt && (
+            <Text c="github-green.5" fz="sm">· saved</Text>
+          )}
+        </Group>
+      </Box>
 
-      <Section title="You" subtitle="Used to estimate your derived stats.">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
-          <Field label="Display name">
-            <TextInput value={form.displayName} onChange={(v) => update({ displayName: v, initials: v.slice(0, 2).toUpperCase() })} />
-          </Field>
-          <Field label={units === "imperial" ? "Height (in)" : "Height (cm)"}>
-            <TextInput
-              type="number"
-              value={Math.round(heightInput)}
-              onChange={(v) => update({ heightCm: units === "imperial" ? Math.round(parseFloat(v) / CM_TO_IN) : parseFloat(v) })}
-            />
-          </Field>
-          <Field label="Age">
-            <TextInput type="number" value={form.age} onChange={(v) => update({ age: parseInt(v, 10) || 0 })} />
-          </Field>
-          <Field label="Sex (for estimates)">
-            <Select value={form.sex} onChange={(v) => update({ sex: v })} options={[{ value: "F", label: "Female" }, { value: "M", label: "Male" }]} />
-          </Field>
-          <Field label="Activity level">
-            <Select
-              value={String(form.activityLevel)}
-              onChange={(v) => update({ activityLevel: parseFloat(v) })}
-              options={[
-                { value: "1.2", label: "Sedentary" },
-                { value: "1.4", label: "Light (1–3 days/wk)" },
-                { value: "1.55", label: "Moderate (3–5 days/wk)" },
-                { value: "1.7", label: "Active (6–7 days/wk)" },
-                { value: "1.9", label: "Very active" },
-              ]}
-            />
-          </Field>
-        </div>
-      </Section>
+      <ProfileSection title="You" subtitle="Used to estimate your derived stats.">
+        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
+          <MTextInput
+            label="Display name"
+            value={form.displayName ?? ""}
+            onChange={(e) => {
+              const value = e.currentTarget.value;
+              update({
+                displayName: value,
+                initials: value.slice(0, 2).toUpperCase(),
+              });
+            }}
+          />
+          <NumberInput
+            label={units === "imperial" ? "Height (in)" : "Height (cm)"}
+            min={0}
+            allowDecimal={false}
+            value={Math.round(heightDisplay) || ""}
+            onChange={(value) => {
+              const num = typeof value === "number" ? value : parseFloat(value);
+              if (!Number.isFinite(num)) return;
+              update({
+                heightCm: units === "imperial" ? Math.round(num / CM_TO_IN) : num,
+              });
+            }}
+          />
+          <NumberInput
+            label="Age"
+            min={0}
+            allowDecimal={false}
+            value={form.age ?? ""}
+            onChange={(value) => {
+              const num = typeof value === "number" ? value : parseInt(value, 10);
+              if (!Number.isFinite(num)) return;
+              update({ age: num });
+            }}
+          />
+          <MSelect
+            label="Sex (for estimates)"
+            value={form.sex}
+            onChange={(value) => value && update({ sex: value })}
+            data={[
+              { value: "F", label: "Female" },
+              { value: "M", label: "Male" },
+            ]}
+          />
+          <MSelect
+            label="Activity level"
+            value={String(form.activityLevel)}
+            onChange={(value) => value && update({ activityLevel: parseFloat(value) })}
+            data={[
+              { value: "1.2", label: "Sedentary" },
+              { value: "1.4", label: "Light (1–3 days/wk)" },
+              { value: "1.55", label: "Moderate (3–5 days/wk)" },
+              { value: "1.7", label: "Active (6–7 days/wk)" },
+              { value: "1.9", label: "Very active" },
+            ]}
+          />
+        </SimpleGrid>
+      </ProfileSection>
 
-      <Section title="Goal" subtitle="Where you're headed, and by when.">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
-          <Field label={units === "imperial" ? "Target weight (lb)" : "Target weight (kg)"}>
-            <TextInput
-              type="number"
-              step="0.1"
-              value={goalKgInput.toFixed(1)}
-              onChange={(v) => update({ goalWeightKg: units === "imperial" ? lbToKg(parseFloat(v)) : parseFloat(v) })}
-            />
-          </Field>
-          <Field label="Target date">
-            <DateInput value={new Date(form.targetDate).toISOString().slice(0, 10)} onChange={(v) => update({ targetDate: dateInputToIso(v) })} />
-          </Field>
-        </div>
-      </Section>
+      <ProfileSection title="Goal" subtitle="Where you're headed, and by when.">
+        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+          <NumberInput
+            label={units === "imperial" ? "Target weight (lb)" : "Target weight (kg)"}
+            min={0}
+            step={0.1}
+            decimalScale={1}
+            value={Number(goalKgDisplay.toFixed(1)) || ""}
+            onChange={(value) => {
+              const num = typeof value === "number" ? value : parseFloat(value);
+              if (!Number.isFinite(num)) return;
+              update({
+                goalWeightKg: units === "imperial" ? lbToKg(num) : num,
+              });
+            }}
+          />
+          <MDateInput
+            label="Target date"
+            placeholder="Pick a date"
+            value={targetDateValue}
+            onChange={(value) => {
+              if (!value) return;
+              const date = new Date(value);
+              date.setHours(8, 0, 0, 0);
+              update({ targetDate: date.toISOString() });
+            }}
+          />
+        </SimpleGrid>
+      </ProfileSection>
 
-      <Section title="Preferences">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
-          <Field label="Units">
-            <Select value={units} onChange={updateUnits} options={[{ value: "metric", label: "Metric (kg, cm)" }, { value: "imperial", label: "Imperial (lb, in)" }]} />
-          </Field>
-          <Field label="Theme">
-            <Select
-              value={theme}
-              onChange={updateTheme}
-              options={[
-                { value: "system", label: "System" },
-                { value: "light", label: "Light" },
-                { value: "dark", label: "Dark" },
-              ]}
-            />
-          </Field>
-          <Field label="Daily reminder">
-            <TimeInput value={form.reminderTime} onChange={(v) => update({ reminderTime: v })} />
-          </Field>
-          <Field label="Streak grace (days)" hint="Miss this many days and your streak resets.">
-            <Select
-              value={String(form.resetGracePeriodDays)}
-              onChange={(v) => update({ resetGracePeriodDays: parseInt(v, 10) })}
-              options={[
-                { value: "0", label: "None — strict" },
-                { value: "1", label: "1 day" },
-                { value: "2", label: "2 days" },
-                { value: "3", label: "3 days" },
-              ]}
-            />
-          </Field>
-        </div>
-        <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 14 }}>
-          <ToggleRow
+      <ProfileSection title="Preferences">
+        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+          <MSelect
+            label="Units"
+            value={units}
+            onChange={updateUnits}
+            data={[
+              { value: "metric", label: "Metric (kg, cm)" },
+              { value: "imperial", label: "Imperial (lb, in)" },
+            ]}
+          />
+          <MSelect
+            label="Theme"
+            value={theme}
+            onChange={updateTheme}
+            data={[
+              { value: "system", label: "System" },
+              { value: "light", label: "Light" },
+              { value: "dark", label: "Dark" },
+            ]}
+          />
+          <MTimeInput
+            label="Daily reminder"
+            value={form.reminderTime ?? ""}
+            onChange={(e) => update({ reminderTime: e.currentTarget.value })}
+          />
+          <MSelect
+            label="Streak grace (days)"
+            description="Miss this many days and your streak resets."
+            value={String(form.resetGracePeriodDays)}
+            onChange={(value) => value && update({ resetGracePeriodDays: parseInt(value, 10) })}
+            data={[
+              { value: "0", label: "None — strict" },
+              { value: "1", label: "1 day" },
+              { value: "2", label: "2 days" },
+              { value: "3", label: "3 days" },
+            ]}
+          />
+        </SimpleGrid>
+        <Stack gap="md" mt="lg">
+          <MSwitch
             label="Share exact numbers in Household"
-            sub="Off keeps your weight, BMI and goal hidden. Streak and trend are always visible."
-            checked={form.shareDetails}
-            onChange={(v) => update({ shareDetails: v })}
+            description="Off keeps your weight, BMI and goal hidden. Streak and trend are always visible."
+            checked={!!form.shareDetails}
+            onChange={(e) => update({ shareDetails: e.currentTarget.checked })}
           />
-          <ToggleRow
+          <MSwitch
             label="Milestone alerts"
-            sub="A small celebration when you hit goal, halfway, or a 30-day streak."
-            checked={form.milestoneAlerts}
-            onChange={(v) => update({ milestoneAlerts: v })}
+            description="A small celebration when you hit goal, halfway, or a 30-day streak."
+            checked={!!form.milestoneAlerts}
+            onChange={(e) => update({ milestoneAlerts: e.currentTarget.checked })}
           />
-        </div>
-      </Section>
-
-    </div>
-  );
-}
-
-function Section({ title, subtitle, children }) {
-  return (
-    <section style={{ marginBottom: 36 }}>
-      <header style={{ marginBottom: 16 }}>
-        <h2 className="serif" style={{ fontSize: 22, fontWeight: 400, margin: 0, letterSpacing: "-0.01em" }}>
-          {title}
-        </h2>
-        {subtitle && <p style={{ color: "var(--ink-3)", fontSize: 13, margin: "4px 0 0 0" }}>{subtitle}</p>}
-      </header>
-      <div className="card" style={{ padding: 22 }}>{children}</div>
-    </section>
-  );
-}
-
-function ToggleRow({ label, sub, checked, onChange }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "center" }}>
-      <div>
-        <div style={{ fontSize: 14, fontWeight: 500 }}>{label}</div>
-        {sub && <div style={{ fontSize: 12.5, color: "var(--ink-3)", marginTop: 2, maxWidth: 460 }}>{sub}</div>}
-      </div>
-      <Switch checked={checked} onChange={onChange} label={label} />
-    </div>
-  );
-}
-
-Object.assign(window, { Dashboard, EntriesScreen, HouseholdScreen, ProfileScreen, Section, ToggleRow });
-
-
-// ---- modals.jsx ----
-// modals.jsx — log weight, milestone celebration, first-run.
-
-function Modal({ children, onClose, maxWidth = 460 }) {
-  useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && onClose?.();
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [onClose]);
-  return (
-    <div className="scrim" onClick={onClose}>
-      <div
-        className="modal-panel"
-        role="dialog"
-        aria-modal="true"
-        onClick={(e) => e.stopPropagation()}
-        style={{ "--modal-max-width": `${maxWidth}px` }}
-      >
-        {children}
-      </div>
-    </div>
+        </Stack>
+      </ProfileSection>
+    </Box>
   );
 }
 
 // ---------- Log weight ----------
 function LogWeightModal({ me, units, existingEntry, onSave, onClose }) {
   const today = window.__fixtures.today;
-  const initialDate = existingEntry?.date || today.toISOString();
+  const initialDate = existingEntry?.date ? new Date(existingEntry.date) : new Date(today);
   const initialKg = existingEntry?.weightKg ?? null;
-  const [dateStr, setDateStr] = useState(new Date(initialDate).toISOString().slice(0, 10));
-  const [weightStr, setWeightStr] = useState(
+  const initialWeight =
     initialKg != null
-      ? (units === "imperial" ? kgToLb(initialKg).toFixed(1) : initialKg.toFixed(1))
-      : ""
-  );
-  const [bodyFat, setBodyFat] = useState(existingEntry?.bodyFatPct ?? "");
-  const [waist, setWaist] = useState(existingEntry?.waistCm != null ? (units === "imperial" ? cmToIn(existingEntry.waistCm).toFixed(1) : existingEntry.waistCm) : "");
-  const [note, setNote] = useState(existingEntry?.note ?? "");
-  const [error, setError] = useState(null);
+      ? units === "imperial"
+        ? Number(kgToLb(initialKg).toFixed(1))
+        : Number(initialKg.toFixed(1))
+      : "";
+  const initialWaist =
+    existingEntry?.waistCm != null
+      ? units === "imperial"
+        ? Number(cmToIn(existingEntry.waistCm).toFixed(1))
+        : existingEntry.waistCm
+      : "";
+  const isEdit = existingEntry?.weightKg != null;
 
-  const inputRef = useRef(null);
-  useEffect(() => { inputRef.current?.focus(); inputRef.current?.select(); }, []);
+  const form = useForm({
+    mode: "controlled",
+    initialValues: {
+      weight: initialWeight,
+      date: initialDate,
+      bodyFat: existingEntry?.bodyFatPct ?? "",
+      waist: initialWaist,
+      note: existingEntry?.note ?? "",
+    },
+    validate: {
+      weight: (value) => {
+        const num = typeof value === "number" ? value : parseFloat(value);
+        if (!Number.isFinite(num)) return "Please enter a weight.";
+        const kg = units === "imperial" ? lbToKg(num) : num;
+        if (kg < 25 || kg > 300) {
+          return units === "imperial"
+            ? "Should be between 55 and 660 lb."
+            : "Should be between 25 and 300 kg.";
+        }
+        return null;
+      },
+    },
+  });
 
-  function validate() {
-    const v = parseFloat(weightStr);
-    if (isNaN(v)) return "Please enter a weight.";
-    const kg = units === "imperial" ? lbToKg(v) : v;
-    if (kg < 25 || kg > 300) return units === "imperial" ? "Should be between 55 and 660 lb." : "Should be between 25 and 300 kg.";
-    return null;
-  }
-
-  function submit(e) {
-    e?.preventDefault();
-    const err = validate();
-    if (err) { setError(err); return; }
-    const v = parseFloat(weightStr);
-    const kg = units === "imperial" ? lbToKg(v) : v;
-    const waistCm = waist ? (units === "imperial" ? parseFloat(waist) / CM_TO_IN : parseFloat(waist)) : null;
-    const date = new Date(dateStr);
+  function handleSubmit(values) {
+    const num = typeof values.weight === "number" ? values.weight : parseFloat(values.weight);
+    const kg = units === "imperial" ? lbToKg(num) : num;
+    const waistRaw = typeof values.waist === "number" ? values.waist : parseFloat(values.waist);
+    const waistCm = Number.isFinite(waistRaw)
+      ? units === "imperial"
+        ? waistRaw / CM_TO_IN
+        : waistRaw
+      : null;
+    const bodyFatNum = typeof values.bodyFat === "number" ? values.bodyFat : parseFloat(values.bodyFat);
+    const date = new Date(values.date);
     date.setHours(8, 0, 0, 0);
+    const dateKey = date.toISOString().slice(0, 10);
     onSave({
-      id: existingEntry?.id || `${me.id}-${dateStr}`,
+      id: existingEntry?.id || `${me.id}-${dateKey}`,
       memberId: me.id,
       date: date.toISOString(),
       weightKg: Math.round(kg * 10) / 10,
-      bodyFatPct: bodyFat ? parseFloat(bodyFat) : null,
-      waistCm: waistCm ? Math.round(waistCm) : null,
-      note: note || null,
+      bodyFatPct: Number.isFinite(bodyFatNum) ? bodyFatNum : null,
+      waistCm: waistCm != null ? Math.round(waistCm) : null,
+      note: values.note || null,
     });
   }
 
   return (
-    <Modal onClose={onClose} maxWidth={520}>
-      <header style={{ marginBottom: 22 }}>
-        <div style={{ fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", fontWeight: 500 }}>
-          {existingEntry?.weightKg != null ? "Edit entry" : "Log entry"}
-        </div>
-        <h2 className="serif" style={{ fontSize: 30, margin: "6px 0 0 0", fontWeight: 400, letterSpacing: "-0.02em" }}>
-          <span className="serif-it">How are you</span> today?
-        </h2>
-      </header>
-
-      <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <Field label={`Weight (${units === "imperial" ? "lb" : "kg"})`} error={error}>
-          <input
-            ref={inputRef}
-            type="number"
-            step="0.1"
-            inputMode="decimal"
-            value={weightStr}
-            onChange={(e) => { setWeightStr(e.target.value); setError(null); }}
+    <MModal opened onClose={onClose} title={isEdit ? "Edit entry" : "Log entry"} centered size="lg">
+      <form onSubmit={form.onSubmit(handleSubmit)}>
+        <Stack gap="md">
+          <NumberInput
+            label={`Weight (${units === "imperial" ? "lb" : "kg"})`}
             placeholder="—"
-            style={{
-              ...inputStyle,
-              fontFamily: "var(--serif)",
-              fontSize: 36,
-              padding: "16px 18px",
-              textAlign: "center",
-              borderColor: error ? "var(--terracotta)" : "var(--rule)",
-              fontVariantNumeric: "tabular-nums",
-            }}
-            onFocus={(e) => !error && (e.currentTarget.style.borderColor = "var(--sage)")}
-            onBlur={(e) => !error && (e.currentTarget.style.borderColor = "var(--rule)")}
+            min={0}
+            step={0.1}
+            decimalScale={1}
+            size="xl"
+            data-autofocus
+            styles={{ input: { fontVariantNumeric: "tabular-nums", textAlign: "center" } }}
+            {...form.getInputProps("weight")}
           />
-        </Field>
 
-        <Field label="Date">
-          <DateInput value={dateStr} onChange={setDateStr} history />
-        </Field>
+          <MDateInput
+            label="Date"
+            placeholder="Pick a date"
+            {...form.getInputProps("date")}
+          />
 
-        <details style={{ borderTop: "1px solid var(--rule-soft)", paddingTop: 14 }}>
-          <summary style={{ cursor: "pointer", fontSize: 13, color: "var(--ink-3)", listStyle: "none", display: "flex", alignItems: "center", gap: 6 }}>
-            <Icon.Plus /> Optional measurements
-          </summary>
-          <div className="modal-grid" style={{ marginTop: 12 }}>
-            <Field label="Body fat (%)">
-              <TextInput type="number" step="0.1" value={bodyFat} onChange={setBodyFat} placeholder="—" />
-            </Field>
-            <Field label={units === "imperial" ? "Waist (in)" : "Waist (cm)"}>
-              <TextInput type="number" step="0.1" value={waist} onChange={setWaist} placeholder="—" />
-            </Field>
-          </div>
-          <div style={{ marginTop: 12 }}>
-            <Field label="A small note (optional)">
-              <TextInput value={note} onChange={setNote} placeholder="Anything to remember about today..." />
-            </Field>
-          </div>
-        </details>
+          <Accordion variant="separated" radius="md">
+            <Accordion.Item value="optional">
+              <Accordion.Control>Optional measurements</Accordion.Control>
+              <Accordion.Panel>
+                <Stack gap="md">
+                  <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+                    <NumberInput
+                      label="Body fat (%)"
+                      placeholder="—"
+                      min={0}
+                      step={0.1}
+                      decimalScale={1}
+                      {...form.getInputProps("bodyFat")}
+                    />
+                    <NumberInput
+                      label={units === "imperial" ? "Waist (in)" : "Waist (cm)"}
+                      placeholder="—"
+                      min={0}
+                      step={0.1}
+                      decimalScale={1}
+                      {...form.getInputProps("waist")}
+                    />
+                  </SimpleGrid>
+                  <MTextInput
+                    label="A small note (optional)"
+                    placeholder="Anything to remember about today..."
+                    {...form.getInputProps("note")}
+                  />
+                </Stack>
+              </Accordion.Panel>
+            </Accordion.Item>
+          </Accordion>
 
-        <div className="modal-actions" style={{ marginTop: 8 }}>
-          <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
-          <button type="submit" className="btn btn-primary">
-            <Icon.Check /> {existingEntry?.weightKg != null ? "Save changes" : "Log entry"}
-          </button>
-        </div>
+          <Group justify="flex-end" gap="sm" mt="sm">
+            <Button variant="subtle" onClick={onClose} type="button">
+              Cancel
+            </Button>
+            <Button type="submit" leftSection={<IconCheck size={16} />}>
+              {isEdit ? "Save changes" : "Log entry"}
+            </Button>
+          </Group>
+        </Stack>
       </form>
-    </Modal>
+    </MModal>
   );
 }
 
 // ---------- Milestone celebration ----------
 function MilestoneModal({ kind, member, onSetNewGoal, onMaintain, onClose }) {
-  // confetti pieces
-  const pieces = useMemo(() =>
-    Array.from({ length: 24 }).map((_, i) => ({
-      left: Math.random() * 100,
-      delay: Math.random() * 600,
-      hue: ["var(--sage)", "var(--sage-2)", "var(--terracotta)", "var(--ink-2)"][i % 4],
-      size: 6 + Math.random() * 6,
-      rot: Math.random() * 360,
-    })), []);
+  const pieces = useMemo(
+    () =>
+      Array.from({ length: 24 }).map((_, i) => ({
+        left: Math.random() * 100,
+        delay: Math.random() * 600,
+        hue: [
+          "var(--mantine-color-github-blue-5)",
+          "var(--mantine-color-github-green-5)",
+          "var(--mantine-color-github-red-5)",
+          "var(--mantine-color-github-gray-6)",
+        ][i % 4],
+        size: 6 + Math.random() * 6,
+        rot: Math.random() * 360,
+      })),
+    [],
+  );
 
-  const title = kind === "goal" ? "You reached your goal." : kind === "halfway" ? "Halfway there." : "30 days running.";
-  const body = kind === "goal"
-    ? "Quietly remarkable. What's next is up to you — set a new target, or shift to maintenance."
-    : kind === "halfway"
-    ? "Half the distance, behind you. Keep your rhythm."
-    : "A month of small daily steps. You're building something.";
+  const title =
+    kind === "goal"
+      ? "You reached your goal."
+      : kind === "halfway"
+        ? "Halfway there."
+        : "30 days running.";
+  const body =
+    kind === "goal"
+      ? "Quietly remarkable. What's next is up to you — set a new target, or shift to maintenance."
+      : kind === "halfway"
+        ? "Half the distance, behind you. Keep your rhythm."
+        : "A month of small daily steps. You're building something.";
 
   return (
-    <Modal onClose={onClose} maxWidth={480}>
-      {/* Confetti */}
-      <div aria-hidden style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", borderRadius: 22 }}>
-        {pieces.map((p, i) => (
-          <span
-            key={i}
-            style={{
-              position: "absolute",
-              top: -20,
-              left: `${p.left}%`,
-              width: p.size,
-              height: p.size * 1.6,
-              background: p.hue,
-              borderRadius: 1,
-              transform: `rotate(${p.rot}deg)`,
-              animation: `confetti 1800ms cubic-bezier(.3,.7,.4,1) ${p.delay}ms both`,
-            }}
-          />
-        ))}
-      </div>
+    <MModal opened onClose={onClose} centered withCloseButton={false} size="md">
+      <Box pos="relative" style={{ overflow: "hidden", borderRadius: 8 }}>
+        <Box
+          aria-hidden
+          pos="absolute"
+          top={0}
+          left={0}
+          right={0}
+          bottom={0}
+          style={{ overflow: "hidden", pointerEvents: "none" }}
+        >
+          {pieces.map((p, i) => (
+            <Box
+              key={i}
+              pos="absolute"
+              top={-20}
+              w={p.size}
+              h={p.size * 1.6}
+              style={{
+                left: `${p.left}%`,
+                background: p.hue,
+                borderRadius: 1,
+                transform: `rotate(${p.rot}deg)`,
+                animation: `confetti 1800ms cubic-bezier(.3,.7,.4,1) ${p.delay}ms both`,
+              }}
+            />
+          ))}
+        </Box>
 
-      <div style={{ position: "relative", textAlign: "center", padding: "8px 6px" }}>
-        <Icon.Sparkle style={{ color: "var(--sage)" }} width="32" height="32" />
-        <h2 className="serif" style={{ fontSize: 36, margin: "12px 0 8px 0", fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1.05 }}>
-          <span className="serif-it">{title}</span>
-        </h2>
-        <p style={{ color: "var(--ink-2)", fontSize: 15, margin: "0 auto 24px auto", maxWidth: 360 }}>
-          {body}
-        </p>
-        {kind === "goal" ? (
-          <div className="modal-actions modal-actions-center">
-            <button className="btn btn-primary" onClick={onSetNewGoal}>Set a new goal</button>
-            <button className="btn" onClick={onMaintain}>Switch to maintenance</button>
-          </div>
-        ) : (
-          <button className="btn btn-primary" onClick={onClose}>Carry on</button>
-        )}
-      </div>
-    </Modal>
+        <Stack pos="relative" align="center" gap="md" py="md" px="xs">
+          <IconSparkles size={32} color="var(--mantine-primary-color-filled)" />
+          <Title order={2} ta="center" fz={32} fw={500} lh={1.1}>
+            {title}
+          </Title>
+          <Text c="dimmed" ta="center" maw={360}>
+            {body}
+          </Text>
+          {kind === "goal" ? (
+            <Group justify="center" gap="sm" mt="sm">
+              <Button onClick={onSetNewGoal}>Set a new goal</Button>
+              <Button variant="default" onClick={onMaintain}>
+                Switch to maintenance
+              </Button>
+            </Group>
+          ) : (
+            <Button mt="sm" onClick={onClose}>
+              Carry on
+            </Button>
+          )}
+        </Stack>
+      </Box>
+    </MModal>
   );
 }
 
 // ---------- First-run ----------
 function FirstRun({ profile, onDone }) {
   const [step, setStep] = useState(0);
-  const [name, setName] = useState(profile?.displayName ?? "");
-  const [units, setUnits] = useState(profile?.units ?? "");
-  const [height, setHeight] = useState(profile?.heightCm ?? "");
-  const [age, setAge] = useState(profile?.age ?? "");
-  const [sex, setSex] = useState(profile?.sex ?? "");
-  const [activityLevel, setActivityLevel] = useState(profile?.activityLevel ? String(profile.activityLevel) : "");
-  const [start, setStart] = useState(profile?.startWeightKg ?? "");
-  const [goal, setGoal] = useState(profile?.goalWeightKg ?? "");
-  const [targetDate, setTargetDate] = useState(profile?.targetDate ? new Date(profile.targetDate).toISOString().slice(0, 10) : "");
-  const [error, setError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
-  const steps = ["Welcome", "About you", "Where you're starting"];
-  const usingImperial = units === "imperial";
+  const form = useForm({
+    mode: "controlled",
+    initialValues: {
+      displayName: profile?.displayName ?? "",
+      units: profile?.units ?? "",
+      height: profile?.heightCm ?? "",
+      age: profile?.age ?? "",
+      sex: profile?.sex ?? "",
+      activityLevel: profile?.activityLevel ? String(profile.activityLevel) : "",
+      startWeight: profile?.startWeightKg ?? "",
+      goalWeight: profile?.goalWeightKg ?? "",
+      targetDate: profile?.targetDate ? new Date(profile.targetDate) : null,
+    },
+  });
 
-  function validNumber(value) {
-    return Number.isFinite(parseFloat(value));
-  }
+  const usingImperial = form.values.units === "imperial";
+  const isNum = (v) => Number.isFinite(typeof v === "number" ? v : parseFloat(v));
 
-  function aboutComplete() {
-    return Boolean(name.trim() && units && validNumber(height) && validNumber(age) && sex && activityLevel);
-  }
+  const aboutComplete =
+    Boolean(form.values.displayName.trim()) &&
+    Boolean(form.values.units) &&
+    isNum(form.values.height) &&
+    isNum(form.values.age) &&
+    Boolean(form.values.sex) &&
+    Boolean(form.values.activityLevel);
 
-  function startComplete() {
-    return Boolean(validNumber(start) && validNumber(goal) && targetDate);
-  }
+  const startComplete =
+    isNum(form.values.startWeight) &&
+    isNum(form.values.goalWeight) &&
+    form.values.targetDate instanceof Date;
 
   async function complete() {
-    setError(null);
-    const heightCm = usingImperial ? parseFloat(height) / CM_TO_IN : parseFloat(height);
-    const startKg = usingImperial ? lbToKg(parseFloat(start)) : parseFloat(start);
-    const goalKg = usingImperial ? lbToKg(parseFloat(goal)) : parseFloat(goal);
-    const date = new Date(targetDate);
-    date.setHours(8, 0, 0, 0);
+    setSubmitError(null);
+    setSubmitting(true);
     try {
+      const v = form.values;
+      const heightNum = typeof v.height === "number" ? v.height : parseFloat(v.height);
+      const startNum = typeof v.startWeight === "number" ? v.startWeight : parseFloat(v.startWeight);
+      const goalNum = typeof v.goalWeight === "number" ? v.goalWeight : parseFloat(v.goalWeight);
+      const heightCm = usingImperial ? heightNum / CM_TO_IN : heightNum;
+      const startKg = usingImperial ? lbToKg(startNum) : startNum;
+      const goalKg = usingImperial ? lbToKg(goalNum) : goalNum;
+      const target = new Date(v.targetDate);
+      target.setHours(8, 0, 0, 0);
       await onDone({
-        displayName: name.trim(),
-        initials: name.trim().slice(0, 2).toUpperCase(),
+        displayName: v.displayName.trim(),
+        initials: v.displayName.trim().slice(0, 2).toUpperCase(),
         heightCm: Math.round(heightCm * 10) / 10,
-        age: parseInt(age, 10),
-        sex,
-        activityLevel: parseFloat(activityLevel),
+        age: parseInt(v.age, 10),
+        sex: v.sex,
+        activityLevel: parseFloat(v.activityLevel),
         startWeightKg: Math.round(startKg * 10) / 10,
         goalWeightKg: Math.round(goalKg * 10) / 10,
-        targetDate: date.toISOString(),
-        units,
+        targetDate: target.toISOString(),
+        units: v.units,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not save profile.");
+      setSubmitError(err instanceof Error ? err.message : "Could not save profile.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: 24,
-      background: "linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 100%)",
-    }}>
-      <div className="card" style={{ padding: "40px 36px", maxWidth: 520, width: "100%", animation: "slideUp 280ms ease both" }}>
-        <div style={{ display: "flex", gap: 6, marginBottom: 28 }}>
-          {steps.map((_, i) => (
-            <span key={i} style={{ height: 3, flex: 1, borderRadius: 999, background: i <= step ? "var(--sage)" : "var(--rule-soft)", transition: "background 280ms ease" }} />
+    <Center mih="100vh" p="md">
+      <Paper shadow="sm" radius="lg" p="xl" maw={520} w="100%" withBorder>
+        <Group gap={6} mb="xl" wrap="nowrap">
+          {[0, 1, 2].map((i) => (
+            <Box
+              key={i}
+              h={3}
+              style={{
+                flex: 1,
+                borderRadius: 999,
+                background:
+                  i <= step
+                    ? "var(--mantine-primary-color-filled)"
+                    : "var(--mantine-color-default-border)",
+                transition: "background 280ms ease",
+              }}
+            />
           ))}
-        </div>
+        </Group>
 
         {step === 0 && (
-          <div>
+          <Stack gap="lg" align="flex-start">
             <Logo size={56} />
-            <h1 className="serif" style={{ fontSize: 38, margin: "20px 0 12px 0", fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
-              <span className="serif-it">Welcome.</span>
-            </h1>
-            <p style={{ color: "var(--ink-2)", fontSize: 15, margin: "0 0 28px 0", maxWidth: 420 }}>
-              A small, calm space for your household to track weight together. Add the required fields once, then start logging.
-            </p>
-            <button className="btn btn-primary" onClick={() => setStep(1)}>Begin</button>
-          </div>
+            <Title order={1} fz={38} fw={400} lh={1.1}>
+              Welcome.
+            </Title>
+            <Text c="dimmed" maw={420}>
+              A small, calm space for your household to track weight together.
+              Add the required fields once, then start logging.
+            </Text>
+            <Button onClick={() => setStep(1)}>Begin</Button>
+          </Stack>
         )}
 
         {step === 1 && (
-          <div>
-            <h1 className="serif" style={{ fontSize: 28, margin: "0 0 6px 0", fontWeight: 400 }}>
-              <span className="serif-it">About</span> you
-            </h1>
-            <p style={{ color: "var(--ink-3)", fontSize: 14, margin: "0 0 22px 0" }}>
-              Used only to estimate your derived stats.
-            </p>
-            <div className="modal-grid">
-              <Field label="Display name"><TextInput value={name} onChange={setName} placeholder="Display name" /></Field>
-              <Field label="Units">
-                <Select value={units} onChange={setUnits} options={[{ value: "", label: "Select units" }, { value: "metric", label: "Metric" }, { value: "imperial", label: "Imperial" }]} />
-              </Field>
-              <Field label={usingImperial ? "Height (in)" : "Height (cm)"}><TextInput type="number" value={height} onChange={setHeight} /></Field>
-              <Field label="Age"><TextInput type="number" value={age} onChange={setAge} /></Field>
-              <Field label="Sex (for estimates)">
-                <Select value={sex} onChange={setSex} options={[{ value: "", label: "Select" }, { value: "F", label: "Female" }, { value: "M", label: "Male" }]} />
-              </Field>
-              <Field label="Activity level">
-                <Select
-                  value={activityLevel}
-                  onChange={setActivityLevel}
-                  options={[
-                    { value: "", label: "Select activity" },
-                    { value: "1.2", label: "Sedentary" },
-                    { value: "1.4", label: "Light" },
-                    { value: "1.55", label: "Moderate" },
-                    { value: "1.7", label: "Active" },
-                    { value: "1.9", label: "Very active" },
-                  ]}
-                />
-              </Field>
-            </div>
-            <div className="modal-actions modal-actions-between" style={{ marginTop: 24 }}>
-              <button className="btn btn-ghost" onClick={() => setStep(0)}>Back</button>
-              <button className="btn btn-primary" disabled={!aboutComplete()} onClick={() => setStep(2)}>Continue</button>
-            </div>
-          </div>
+          <Stack gap="lg">
+            <Box>
+              <Title order={1} fz={28} fw={400}>About you</Title>
+              <Text c="dimmed" fz="sm" mt={4}>
+                Used only to estimate your derived stats.
+              </Text>
+            </Box>
+            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+              <MTextInput
+                label="Display name"
+                placeholder="Display name"
+                {...form.getInputProps("displayName")}
+              />
+              <MSelect
+                label="Units"
+                placeholder="Select units"
+                data={[
+                  { value: "metric", label: "Metric" },
+                  { value: "imperial", label: "Imperial" },
+                ]}
+                {...form.getInputProps("units")}
+              />
+              <NumberInput
+                label={usingImperial ? "Height (in)" : "Height (cm)"}
+                min={0}
+                {...form.getInputProps("height")}
+              />
+              <NumberInput
+                label="Age"
+                min={0}
+                allowDecimal={false}
+                {...form.getInputProps("age")}
+              />
+              <MSelect
+                label="Sex (for estimates)"
+                placeholder="Select"
+                data={[
+                  { value: "F", label: "Female" },
+                  { value: "M", label: "Male" },
+                ]}
+                {...form.getInputProps("sex")}
+              />
+              <MSelect
+                label="Activity level"
+                placeholder="Select activity"
+                data={[
+                  { value: "1.2", label: "Sedentary" },
+                  { value: "1.4", label: "Light" },
+                  { value: "1.55", label: "Moderate" },
+                  { value: "1.7", label: "Active" },
+                  { value: "1.9", label: "Very active" },
+                ]}
+                {...form.getInputProps("activityLevel")}
+              />
+            </SimpleGrid>
+            <Group justify="space-between" mt="md">
+              <Button variant="subtle" onClick={() => setStep(0)}>Back</Button>
+              <Button disabled={!aboutComplete} onClick={() => setStep(2)}>
+                Continue
+              </Button>
+            </Group>
+          </Stack>
         )}
 
         {step === 2 && (
-          <div>
-            <h1 className="serif" style={{ fontSize: 28, margin: "0 0 6px 0", fontWeight: 400 }}>
-              <span className="serif-it">Where</span> you're starting
-            </h1>
-            <p style={{ color: "var(--ink-3)", fontSize: 14, margin: "0 0 22px 0" }}>
-              These fields are required before the dashboard can calculate progress.
-            </p>
-            <div className="modal-grid">
-              <Field label={usingImperial ? "Today's weight (lb)" : "Today's weight (kg)"}>
-                <TextInput type="number" step="0.1" value={start} onChange={setStart} />
-              </Field>
-              <Field label={usingImperial ? "Target weight (lb)" : "Target weight (kg)"}>
-                <TextInput type="number" step="0.1" value={goal} onChange={setGoal} />
-              </Field>
-              <Field label="Target date">
-                <DateInput value={targetDate} onChange={setTargetDate} />
-              </Field>
-            </div>
-            {error && <p style={{ color: "var(--terracotta)", fontSize: 13, margin: "14px 0 0" }}>{error}</p>}
-            <div className="modal-actions modal-actions-between" style={{ marginTop: 24 }}>
-              <button className="btn btn-ghost" onClick={() => setStep(1)}>Back</button>
-              <button className="btn btn-primary" disabled={!startComplete()} onClick={complete}>Begin tracking</button>
-            </div>
-          </div>
+          <Stack gap="lg">
+            <Box>
+              <Title order={1} fz={28} fw={400}>Where you're starting</Title>
+              <Text c="dimmed" fz="sm" mt={4}>
+                These fields are required before the dashboard can calculate progress.
+              </Text>
+            </Box>
+            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+              <NumberInput
+                label={usingImperial ? "Today's weight (lb)" : "Today's weight (kg)"}
+                min={0}
+                step={0.1}
+                decimalScale={1}
+                {...form.getInputProps("startWeight")}
+              />
+              <NumberInput
+                label={usingImperial ? "Target weight (lb)" : "Target weight (kg)"}
+                min={0}
+                step={0.1}
+                decimalScale={1}
+                {...form.getInputProps("goalWeight")}
+              />
+              <MDateInput
+                label="Target date"
+                placeholder="Pick a date"
+                clearable
+                {...form.getInputProps("targetDate")}
+              />
+            </SimpleGrid>
+            {submitError && (
+              <Text c="red" fz="sm">{submitError}</Text>
+            )}
+            <Group justify="space-between" mt="md">
+              <Button variant="subtle" onClick={() => setStep(1)} disabled={submitting}>
+                Back
+              </Button>
+              <Button
+                disabled={!startComplete}
+                loading={submitting}
+                onClick={complete}
+              >
+                Begin tracking
+              </Button>
+            </Group>
+          </Stack>
         )}
-      </div>
-    </div>
+      </Paper>
+    </Center>
   );
 }
 
-Object.assign(window, { Modal, LogWeightModal, MilestoneModal, FirstRun });
+Object.assign(window, { LogWeightModal, MilestoneModal, FirstRun });
 
 
 // ---- features.jsx ----
 // features.jsx — weekly digest, add-member, first-of-month recap, empty states.
 
 // ---------- Weekly Digest ----------
-function WeeklyDigestScreen({ members, entries, units }) {
-  const today = window.__fixtures.today;
-  // "Week" = past 7 days ending today
-  const weekStart = new Date(+today - 6 * 86400000);
-  weekStart.setHours(0, 0, 0, 0);
-  const prevStart = new Date(+weekStart - 7 * 86400000);
-
-  function inRange(d, start, end) {
-    const t = +new Date(d);
-    return t >= +start && t < +end;
-  }
-
-  const weekEnd = new Date(+today + 86400000);
-
-  function summarizeMember(m) {
-    const all = entries.filter((e) => e.memberId === m.id).sort((a, b) => +new Date(a.date) - +new Date(b.date));
-    const thisWeek = all.filter((e) => inRange(e.date, weekStart, weekEnd));
-    const lastWeek = all.filter((e) => inRange(e.date, prevStart, weekStart));
-    const startOfWeek = lastWeek[lastWeek.length - 1] || thisWeek[0];
-    const endOfWeek = thisWeek[thisWeek.length - 1];
-    const delta = startOfWeek && endOfWeek ? endOfWeek.weightKg - startOfWeek.weightKg : null;
-    const streak = calcStreak(all, m.resetGracePeriodDays);
-    const lowest = thisWeek.length ? Math.min(...thisWeek.map((e) => e.weightKg)) : null;
-    const consistency = thisWeek.length / 7;
-    return { m, thisWeek, lastWeek, delta, streak, lowest, endOfWeek, consistency };
-  }
-
-  const summaries = members.map(summarizeMember);
-  const householdConsistency = summaries.reduce((a, s) => a + s.consistency, 0) / summaries.length;
-
-  function encouragement(s, units) {
-    if (!s.thisWeek.length) return "A quiet week. Tomorrow's a clean page.";
-    if (!s.delta) return s.thisWeek.length === 1 ? "First entry of the week — a beginning." : "Holding steady this week.";
-    const losing = s.m.startWeightKg > s.m.goalWeightKg;
-    const trendingTowardGoal = (losing && s.delta < 0) || (!losing && s.delta > 0);
-    const dKg = Math.abs(s.delta);
-    if (dKg < 0.15) return "Just about even — the kind of week that builds patience.";
-    if (trendingTowardGoal) {
-      if (s.consistency >= 0.85) return "Steady, considered, on the move.";
-      return "Quiet progress in the right direction.";
-    }
-    return "A small bounce. Most weeks have one.";
-  }
-
-  return (
-    <div style={{ animation: "fadeIn 320ms ease both", maxWidth: 880 }}>
-      <header style={{ marginBottom: 28 }}>
-        <div style={{ fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--md-on-surface-variant)", fontWeight: 500 }}>
-          Sunday recap
-        </div>
-        <h1 className="display" style={{ fontSize: "clamp(28px, 3.6vw, 40px)", margin: "8px 0 0 0" }}>
-          The week of <span style={{ fontStyle: "italic" }}>{fmtDateLong(weekStart)}</span>
-        </h1>
-        <p style={{ color: "var(--md-on-surface-variant)", fontSize: 14.5, margin: "8px 0 0 0", maxWidth: 600 }}>
-          Together the household logged{" "}
-          <span className="num" style={{ color: "var(--md-on-surface)" }}>
-            {summaries.reduce((a, s) => a + s.thisWeek.length, 0)}
-          </span>{" "}
-          {summaries.reduce((a, s) => a + s.thisWeek.length, 0) === 1 ? "entry" : "entries"}
-          {" · "}
-          {Math.round(householdConsistency * 100)}% of days covered.
-        </p>
-      </header>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
-        {summaries.map(({ m, thisWeek, delta, streak, lowest, consistency, endOfWeek }) => {
-          const showDetails = m.shareDetails || m.isMe;
-          const positive = delta != null && ((m.startWeightKg > m.goalWeightKg && delta < 0) || (m.startWeightKg < m.goalWeightKg && delta > 0));
-          return (
-            <article key={m.id} className="card" style={{ padding: 22, position: "relative" }}>
-              <header style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-                <Avatar member={m} size={44} />
-                <div>
-                  <div className="display" style={{ fontSize: 20, lineHeight: 1.1 }}>{m.displayName}</div>
-                  <div style={{ fontSize: 12, color: "var(--md-on-surface-variant)" }}>
-                    {thisWeek.length}/7 days · {streak.broken ? "streak reset" : `${streak.length}-day streak`}
-                  </div>
-                </div>
-              </header>
-
-              {/* Week dots */}
-              <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
-                {Array.from({ length: 7 }).map((_, i) => {
-                  const day = new Date(+weekStart + i * 86400000);
-                  const dayKey = day.toISOString().slice(0, 10);
-                  const has = thisWeek.find((e) => e.date.slice(0, 10) === dayKey);
-                  const isToday = day.toDateString() === today.toDateString();
-                  return (
-                    <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                      <div title={fmtDate(day)} style={{
-                        width: "100%", height: 8, borderRadius: 999,
-                        background: has ? "var(--md-primary)" : "var(--md-surface-container-highest)",
-                        opacity: has ? 1 : isToday ? 0.55 : 0.35,
-                        boxShadow: isToday && !has ? `inset 0 0 0 1.5px var(--md-primary)` : "none",
-                        transition: "background 240ms ease",
-                      }} />
-                      <div style={{ fontSize: 10, color: "var(--md-on-surface-variant)", letterSpacing: "0.04em" }}>
-                        {day.toLocaleDateString("en-US", { weekday: "narrow" })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Numbers */}
-              <div style={{ display: "grid", gridTemplateColumns: showDetails ? "1fr 1fr 1fr" : "1fr 1fr", gap: 14, marginBottom: 14 }}>
-                <DigestStat label="Days logged" value={`${thisWeek.length}/7`} />
-                {showDetails ? (
-                  <>
-                    <DigestStat
-                      label="This week"
-                      value={delta != null ? fmtDelta(delta, units) : "—"}
-                      tone={delta == null ? null : positive ? "good" : Math.abs(delta) < 0.15 ? null : "warn"}
-                    />
-                    <DigestStat
-                      label="Lowest"
-                      value={lowest != null ? fmtWeight(lowest, units, { unitless: true }) : "—"}
-                    />
-                  </>
-                ) : (
-                  <DigestStat
-                    label="Direction"
-                    value={delta == null ? "—" : Math.abs(delta) < 0.15 ? "steady" : positive ? "↓ toward goal" : "↑ slight"}
-                    tone={delta == null ? null : positive ? "good" : null}
-                  />
-                )}
-              </div>
-
-              <div style={{
-                fontStyle: "italic",
-                fontFamily: "var(--font-display)",
-                fontSize: 15,
-                color: "var(--md-on-surface)",
-                lineHeight: 1.45,
-                paddingTop: 14,
-                borderTop: "1px solid var(--md-outline-variant)",
-              }}>
-                {encouragement({ m, thisWeek, delta, consistency }, units)}
-              </div>
-            </article>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function DigestStat({ label, value, tone }) {
-  const toneColor = tone === "good" ? "var(--md-primary)" : tone === "warn" ? "var(--md-error)" : "var(--md-on-surface)";
-  return (
-    <div>
-      <div style={{ fontSize: 10.5, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--md-on-surface-variant)", fontWeight: 500 }}>
-        {label}
-      </div>
-      <div className="num display" style={{ fontSize: 22, marginTop: 4, color: toneColor, lineHeight: 1.1, letterSpacing: "-0.01em" }}>
-        {value}
-      </div>
-    </div>
-  );
-}
-
-// ---------- Add Member Modal ----------
 function AddMemberModal({ onAdd, onClose }) {
   const [step, setStep] = useState(0);
-  const [form, setForm] = useState({
-    displayName: "",
-    sex: "",
-    age: "",
-    heightCm: "",
-    activityLevel: "",
-    startWeightKg: "",
-    goalWeightKg: "",
-    targetDate: "",
-    colorIdx: 2,
-    shareDetails: false,
-  });
-  const [units, setUnits] = useState("");
   const [error, setError] = useState(null);
-  const inputRef = useRef(null);
-  useEffect(() => { inputRef.current?.focus(); }, [step]);
+  const [submitting, setSubmitting] = useState(false);
 
-  function update(patch) { setForm({ ...form, ...patch }); setError(null); }
-  function updateUnits(value) { setUnits(value); setError(null); }
+  const form = useForm({
+    mode: "controlled",
+    initialValues: {
+      displayName: "",
+      sex: "",
+      age: "",
+      units: "",
+      heightCm: "",
+      activityLevel: "",
+      startWeightKg: "",
+      goalWeightKg: "",
+      targetDate: null,
+      colorIdx: 2,
+      shareDetails: false,
+    },
+  });
 
-  function validNumber(value) {
-    return Number.isFinite(parseFloat(value));
-  }
+  const v = form.values;
+  const isNum = (val) =>
+    Number.isFinite(typeof val === "number" ? val : parseFloat(val));
 
   function validateBasics() {
-    if (!form.displayName.trim()) return "Please enter a name.";
-    if (!units) return "Please select units.";
-    if (!validNumber(form.heightCm) || parseFloat(form.heightCm) < (units === "imperial" ? 36 : 90)) return "Please enter a height.";
-    if (!validNumber(form.age) || parseFloat(form.age) < 5 || parseFloat(form.age) > 110) return "Please enter a sensible age.";
-    if (!form.sex) return "Please select sex.";
-    if (!form.activityLevel) return "Please select activity level.";
+    if (!v.displayName.trim()) return "Please enter a name.";
+    if (!v.units) return "Please select units.";
+    const minHeight = v.units === "imperial" ? 36 : 90;
+    if (!isNum(v.heightCm) || parseFloat(v.heightCm) < minHeight)
+      return "Please enter a height.";
+    const ageNum = parseFloat(v.age);
+    if (!isNum(v.age) || ageNum < 5 || ageNum > 110)
+      return "Please enter a sensible age.";
+    if (!v.sex) return "Please select sex.";
+    if (!v.activityLevel) return "Please select activity level.";
     return null;
   }
 
   function validateWeights() {
-    if (!validNumber(form.startWeightKg)) return "Please enter today's weight.";
-    if (!validNumber(form.goalWeightKg)) return "Please enter a target weight.";
-    if (!form.targetDate || Number.isNaN(new Date(form.targetDate).getTime())) return "Please select a target date.";
+    if (!isNum(v.startWeightKg)) return "Please enter today's weight.";
+    if (!isNum(v.goalWeightKg)) return "Please enter a target weight.";
+    if (!(v.targetDate instanceof Date)) return "Please select a target date.";
     return null;
   }
 
   async function commit() {
+    setError(null);
     const err = validateBasics() || validateWeights();
-    if (err) { setError(err); return; }
-    const heightCm = units === "imperial" ? parseFloat(form.heightCm) / CM_TO_IN : parseFloat(form.heightCm);
-    const startKg = units === "imperial" ? lbToKg(parseFloat(form.startWeightKg)) : parseFloat(form.startWeightKg);
-    const goalKg = units === "imperial" ? lbToKg(parseFloat(form.goalWeightKg)) : parseFloat(form.goalWeightKg);
-    const targetDate = new Date(form.targetDate);
-    targetDate.setHours(8, 0, 0, 0);
+    if (err) {
+      setError(err);
+      return;
+    }
+    setSubmitting(true);
     try {
+      const heightNum =
+        typeof v.heightCm === "number" ? v.heightCm : parseFloat(v.heightCm);
+      const startNum =
+        typeof v.startWeightKg === "number"
+          ? v.startWeightKg
+          : parseFloat(v.startWeightKg);
+      const goalNum =
+        typeof v.goalWeightKg === "number"
+          ? v.goalWeightKg
+          : parseFloat(v.goalWeightKg);
+      const heightCm = v.units === "imperial" ? heightNum / CM_TO_IN : heightNum;
+      const startKg = v.units === "imperial" ? lbToKg(startNum) : startNum;
+      const goalKg = v.units === "imperial" ? lbToKg(goalNum) : goalNum;
+      const target = new Date(v.targetDate);
+      target.setHours(8, 0, 0, 0);
       await onAdd({
-        displayName: form.displayName.trim(),
-        initials: form.displayName.trim().slice(0, 2).toUpperCase(),
-        sex: form.sex,
-        age: parseInt(form.age, 10),
+        displayName: v.displayName.trim(),
+        initials: v.displayName.trim().slice(0, 2).toUpperCase(),
+        sex: v.sex,
+        age: parseInt(v.age, 10),
         heightCm: Math.round(heightCm * 10) / 10,
-        activityLevel: parseFloat(form.activityLevel),
+        activityLevel: parseFloat(v.activityLevel),
         startWeightKg: Math.round(startKg * 10) / 10,
         goalWeightKg: Math.round(goalKg * 10) / 10,
-        targetDate: targetDate.toISOString(),
-        colorIdx: form.colorIdx,
-        shareDetails: form.shareDetails,
-        units,
+        targetDate: target.toISOString(),
+        colorIdx: v.colorIdx,
+        shareDetails: v.shareDetails,
+        units: v.units,
       });
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "Could not add member.");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not add member.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
   const palette = [0, 1, 2, 3, 4, 5];
-  const startWeightError = error?.includes("today") ? error : null;
-  const targetWeightError = error?.includes("target") ? error : null;
-  const targetDateError = error?.includes("date") ? error : null;
-  const stepOneError = error && !startWeightError && !targetWeightError && !targetDateError ? error : null;
 
   return (
-    <Modal onClose={onClose} maxWidth={520}>
-      <header style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--md-on-surface-variant)", fontWeight: 500 }}>
-          New household member
-        </div>
-        <h2 className="display" style={{ fontSize: 28, margin: "6px 0 0 0", lineHeight: 1.1, letterSpacing: "-0.01em" }}>
-          Welcome <span style={{ fontStyle: "italic" }}>them in.</span>
-        </h2>
-      </header>
-
+    <MModal
+      opened
+      onClose={onClose}
+      centered
+      size="lg"
+      title="New household member"
+    >
       {step === 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <Field label="Display name" error={error}>
-            <input ref={inputRef} className="md-input" value={form.displayName} onChange={(e) => update({ displayName: e.target.value })} placeholder="Casey" />
-          </Field>
-          <Field label="Avatar tint">
-            <div style={{ display: "flex", gap: 10 }}>
+        <Stack gap="md">
+          <MTextInput
+            label="Display name"
+            placeholder="Casey"
+            data-autofocus
+            {...form.getInputProps("displayName")}
+          />
+          <Box>
+            <Text fz="sm" fw={500} mb={6}>Avatar tint</Text>
+            <Group gap="sm">
               {palette.map((i) => (
-                <button
+                <UnstyledButton
                   key={i}
-                  type="button"
                   aria-label={`Tint ${i + 1}`}
-                  onClick={() => update({ colorIdx: i })}
-                  style={{
-                    width: 36, height: 36, borderRadius: 9999,
-                    background: AVATAR_COLORS[i],
-                    border: form.colorIdx === i ? "2px solid var(--md-on-surface)" : "2px solid transparent",
-                    boxShadow: form.colorIdx === i ? "0 0 0 2px var(--md-surface)" : "none",
-                    cursor: "pointer", transition: "transform 160ms ease",
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.08)"}
-                  onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
-                />
+                  aria-pressed={v.colorIdx === i}
+                  onClick={() => form.setFieldValue("colorIdx", i)}
+                  style={{ borderRadius: 9999 }}
+                >
+                  <ColorSwatch
+                    color={AVATAR_COLORS[i]}
+                    size={36}
+                    withShadow={false}
+                    style={{
+                      cursor: "pointer",
+                      outline:
+                        v.colorIdx === i
+                          ? "2px solid var(--mantine-color-text)"
+                          : "2px solid transparent",
+                      outlineOffset: 2,
+                    }}
+                  />
+                </UnstyledButton>
               ))}
-            </div>
-          </Field>
-          <div className="modal-grid">
-            <Field label="Age">
-              <input className="md-input" type="number" value={form.age} onChange={(e) => update({ age: e.target.value })} />
-            </Field>
-            <Field label="Sex (for estimates)">
-              <Select value={form.sex} onChange={(v) => update({ sex: v })} options={[{ value: "", label: "Select" }, { value: "F", label: "Female" }, { value: "M", label: "Male" }]} />
-            </Field>
-          </div>
-          <Field label="Units">
-            <Select value={units} onChange={updateUnits} options={[{ value: "", label: "Select units" }, { value: "metric", label: "Metric (kg, cm)" }, { value: "imperial", label: "Imperial (lb, in)" }]} />
-          </Field>
-          <Field label={units === "imperial" ? "Height (in)" : "Height (cm)"}>
-            <input className="md-input" type="number" step="0.1" value={form.heightCm} onChange={(e) => update({ heightCm: e.target.value })} />
-          </Field>
-          <Field label="Activity level">
-            <Select
-              value={form.activityLevel}
-              onChange={(v) => update({ activityLevel: v })}
-              options={[
-                { value: "", label: "Select activity" },
-                { value: "1.2", label: "Sedentary" },
-                { value: "1.4", label: "Light" },
-                { value: "1.55", label: "Moderate" },
-                { value: "1.7", label: "Active" },
-                { value: "1.9", label: "Very active" },
-              ]}
+            </Group>
+          </Box>
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+            <NumberInput
+              label="Age"
+              min={0}
+              allowDecimal={false}
+              {...form.getInputProps("age")}
             />
-          </Field>
-
-          <div className="modal-actions modal-actions-between" style={{ marginTop: 8 }}>
-            <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
-            <button type="button" className="btn btn-primary" onClick={() => { const err = validateBasics(); if (err) { setError(err); return; } setStep(1); }}>
+            <MSelect
+              label="Sex (for estimates)"
+              placeholder="Select"
+              data={[
+                { value: "F", label: "Female" },
+                { value: "M", label: "Male" },
+              ]}
+              {...form.getInputProps("sex")}
+            />
+          </SimpleGrid>
+          <MSelect
+            label="Units"
+            placeholder="Select units"
+            data={[
+              { value: "metric", label: "Metric (kg, cm)" },
+              { value: "imperial", label: "Imperial (lb, in)" },
+            ]}
+            {...form.getInputProps("units")}
+          />
+          <NumberInput
+            label={v.units === "imperial" ? "Height (in)" : "Height (cm)"}
+            min={0}
+            step={0.1}
+            decimalScale={1}
+            {...form.getInputProps("heightCm")}
+          />
+          <MSelect
+            label="Activity level"
+            placeholder="Select activity"
+            data={[
+              { value: "1.2", label: "Sedentary" },
+              { value: "1.4", label: "Light" },
+              { value: "1.55", label: "Moderate" },
+              { value: "1.7", label: "Active" },
+              { value: "1.9", label: "Very active" },
+            ]}
+            {...form.getInputProps("activityLevel")}
+          />
+          {error && <Text c="red" fz="sm">{error}</Text>}
+          <Group justify="space-between" mt="sm">
+            <Button variant="subtle" onClick={onClose}>Cancel</Button>
+            <Button
+              onClick={() => {
+                const err = validateBasics();
+                if (err) {
+                  setError(err);
+                  return;
+                }
+                setError(null);
+                setStep(1);
+              }}
+            >
               Continue
-            </button>
-          </div>
-        </div>
+            </Button>
+          </Group>
+        </Stack>
       )}
 
       {step === 1 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <p style={{ color: "var(--md-on-surface-variant)", fontSize: 13.5, margin: 0 }}>
+        <Stack gap="md">
+          <Text c="dimmed" fz="sm">
             Add a starting point and target so progress cards have real context.
-          </p>
-          <div className="modal-grid">
-            <Field label={units === "imperial" ? "Today's weight (lb)" : "Today's weight (kg)"} error={startWeightError}>
-              <input className="md-input" type="number" step="0.1" value={form.startWeightKg} onChange={(e) => update({ startWeightKg: e.target.value })} placeholder="—" />
-            </Field>
-            <Field label={units === "imperial" ? "Target weight (lb)" : "Target weight (kg)"} error={targetWeightError}>
-              <input className="md-input" type="number" step="0.1" value={form.goalWeightKg} onChange={(e) => update({ goalWeightKg: e.target.value })} placeholder="—" />
-            </Field>
-            <Field label="Target date" error={targetDateError}>
-              <DateInput value={form.targetDate} onChange={(value) => update({ targetDate: value })} />
-            </Field>
-          </div>
-          {stepOneError && <p style={{ color: "var(--md-error)", fontSize: 13, margin: 0 }}>{stepOneError}</p>}
-          <ToggleRow
+          </Text>
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+            <NumberInput
+              label={v.units === "imperial" ? "Today's weight (lb)" : "Today's weight (kg)"}
+              placeholder="—"
+              min={0}
+              step={0.1}
+              decimalScale={1}
+              {...form.getInputProps("startWeightKg")}
+            />
+            <NumberInput
+              label={v.units === "imperial" ? "Target weight (lb)" : "Target weight (kg)"}
+              placeholder="—"
+              min={0}
+              step={0.1}
+              decimalScale={1}
+              {...form.getInputProps("goalWeightKg")}
+            />
+            <MDateInput
+              label="Target date"
+              placeholder="Pick a date"
+              clearable
+              {...form.getInputProps("targetDate")}
+            />
+          </SimpleGrid>
+          <MSwitch
             label="Share exact numbers in Household"
-            sub="Off by default. Each member can change this themselves later."
-            checked={form.shareDetails}
-            onChange={(v) => update({ shareDetails: v })}
+            description="Off by default. Each member can change this themselves later."
+            {...form.getInputProps("shareDetails", { type: "checkbox" })}
           />
-          <div className="modal-actions modal-actions-between" style={{ marginTop: 8 }}>
-            <button type="button" className="btn btn-ghost" onClick={() => setStep(0)}>Back</button>
-            <button type="button" className="btn btn-primary" onClick={commit}>
-              <Icon.Check /> Add to household
-            </button>
-          </div>
-        </div>
+          {error && <Text c="red" fz="sm">{error}</Text>}
+          <Group justify="space-between" mt="sm">
+            <Button variant="subtle" onClick={() => setStep(0)} disabled={submitting}>
+              Back
+            </Button>
+            <Button
+              onClick={commit}
+              loading={submitting}
+              leftSection={<IconCheck size={16} />}
+            >
+              Add to household
+            </Button>
+          </Group>
+        </Stack>
       )}
-    </Modal>
+    </MModal>
   );
 }
 
@@ -3393,15 +2781,17 @@ function AddMemberModal({ onAdd, onClose }) {
 function FirstOfMonthCard({ me, entries, units, onDismiss }) {
   const today = window.__fixtures.today;
   const dayOfMonth = today.getDate();
-  if (dayOfMonth > 7) return null; // only show first week of month
+  if (dayOfMonth > 7) return null;
 
   const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
   const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
   const myEntries = entries.filter((e) => e.memberId === me.id);
-  const lastMonthEntries = myEntries.filter((e) => {
-    const d = new Date(e.date);
-    return d >= lastMonth && d < thisMonthStart;
-  }).sort((a, b) => +new Date(a.date) - +new Date(b.date));
+  const lastMonthEntries = myEntries
+    .filter((e) => {
+      const d = new Date(e.date);
+      return d >= lastMonth && d < thisMonthStart;
+    })
+    .sort((a, b) => +new Date(a.date) - +new Date(b.date));
 
   if (lastMonthEntries.length < 2) return null;
 
@@ -3414,46 +2804,44 @@ function FirstOfMonthCard({ me, entries, units, onDismiss }) {
   const consistency = lastMonthEntries.length / daysInMonth;
 
   return (
-    <section className="card" style={{
-      padding: 22,
-      marginBottom: 24,
-      background: "linear-gradient(180deg, var(--md-secondary-container) 0%, var(--md-surface-container-low) 100%)",
-      border: "1px solid var(--md-outline-variant)",
-      animation: "fadeIn 280ms ease both",
-      position: "relative",
-      overflow: "hidden",
-    }}>
-      <button
-        type="button"
-        aria-label="Dismiss"
+    <Paper withBorder radius="md" p="lg" mb="lg" pos="relative">
+      <ActionIcon
+        variant="subtle"
+        color="gray"
+        pos="absolute"
+        top={12}
+        right={12}
         onClick={onDismiss}
-        style={{ position: "absolute", top: 14, right: 14, background: "transparent", border: 0, color: "var(--md-on-surface-variant)", cursor: "pointer", padding: 4, borderRadius: 9999 }}
+        aria-label="Dismiss"
       >
-        <Icon.X />
-      </button>
-      <div style={{ fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--md-on-surface-variant)", fontWeight: 500 }}>
+        <IconX size={16} />
+      </ActionIcon>
+      <Text fz="xs" c="dimmed" fw={500} tt="uppercase" lts="0.08em">
         A new month
-      </div>
-      <h3 className="display" style={{ fontSize: 24, margin: "6px 0 12px 0", letterSpacing: "-0.01em", lineHeight: 1.15 }}>
-        Looking back on <span style={{ fontStyle: "italic" }}>{lastMonth.toLocaleDateString("en-US", { month: "long" })}</span>
-      </h3>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 18, marginBottom: 12 }}>
-        <DigestStat label="Days logged" value={`${lastMonthEntries.length}/${daysInMonth}`} />
-        <DigestStat
+      </Text>
+      <Title order={3} fz={22} fw={500} mt={6} mb="md">
+        Looking back on{" "}
+        {lastMonth.toLocaleDateString("en-US", { month: "long" })}
+      </Title>
+      <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" mb="md">
+        <Stat label="Days logged" value={`${lastMonthEntries.length}/${daysInMonth}`} />
+        <Stat
           label="Net change"
           value={fmtDelta(delta, units)}
           tone={Math.abs(delta) < 0.2 ? null : positive ? "good" : "warn"}
         />
-        <DigestStat label="Consistency" value={`${Math.round(consistency * 100)}%`} />
-      </div>
-      <p style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: 15, color: "var(--md-on-surface)", margin: 0, lineHeight: 1.5 }}>
+        <Stat label="Consistency" value={`${Math.round(consistency * 100)}%`} />
+      </SimpleGrid>
+      <Text fs="italic" fz="sm" c="dimmed">
         {Math.abs(delta) < 0.2
           ? "A steady month. Maintenance is its own kind of progress."
           : positive
-          ? consistency > 0.7 ? "A considered month — consistent and quietly downward." : "Real progress, even with a few quiet days."
-          : "Not the direction you wanted, but the honest record matters more than the number."}
-      </p>
-    </section>
+            ? consistency > 0.7
+              ? "A considered month — consistent and quietly downward."
+              : "Real progress, even with a few quiet days."
+            : "Not the direction you wanted, but the honest record matters more than the number."}
+      </Text>
+    </Paper>
   );
 }
 
@@ -3466,97 +2854,93 @@ function EmptyDashboard({ me, entries, onLogToday }) {
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   return (
-    <div style={{ animation: "fadeIn 320ms ease both", maxWidth: 720 }}>
-      <header style={{ marginBottom: 28 }}>
-        <div style={{ fontSize: 13, color: "var(--md-on-surface-variant)", letterSpacing: "0.04em" }}>
-          {fmtDateLong(today)}
-        </div>
-        <h1 className="display" style={{ fontSize: "clamp(32px, 4.6vw, 48px)", margin: "8px 0 0 0", lineHeight: 1.1, letterSpacing: "-0.02em" }}>
-          {greeting}, <span style={{ fontStyle: "italic" }}>{me.displayName}.</span>
-        </h1>
-      </header>
+    <Box maw={720}>
+      <Box mb="xl">
+        <Text fz="sm" c="dimmed">{fmtDateLong(today)}</Text>
+        <Title order={1} fz={{ base: 32, sm: 44 }} fw={500} mt={6} lh={1.1}>
+          {greeting}, {me.displayName}.
+        </Title>
+      </Box>
 
-      <section className="card" style={{ padding: "44px 36px", marginBottom: 18, position: "relative", overflow: "hidden" }}>
-        <div aria-hidden style={{
-          position: "absolute", inset: 0, opacity: 0.4, pointerEvents: "none",
-          background: "radial-gradient(circle at 100% 0%, var(--md-secondary-container) 0%, transparent 50%)",
-        }} />
-        <div style={{ position: "relative" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 12px", borderRadius: 9999, background: "var(--md-surface-container-high)", fontSize: 11.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--md-on-surface-variant)", marginBottom: 18 }}>
-            <Icon.Sparkle width="14" height="14" /> Just getting started
-          </div>
-          <h2 className="display" style={{ fontSize: 32, margin: "0 0 12px 0", letterSpacing: "-0.02em", lineHeight: 1.15 }}>
-            {count === 0 ? (
-              <>One <span style={{ fontStyle: "italic" }}>small step</span> begins it.</>
-            ) : (
-              <>You've made <span style={{ fontStyle: "italic" }}>a beginning.</span></>
-            )}
-          </h2>
-          <p style={{ color: "var(--md-on-surface-variant)", fontSize: 15.5, lineHeight: 1.55, maxWidth: 460, margin: "0 0 24px 0" }}>
-            {count === 0
-              ? "Log today's weight to start your record. The chart and stats appear once you've a few days behind you — usually three or four."
-              : `${count} entr${count === 1 ? "y" : "ies"} so far. ${3 - count > 0 ? `${3 - count} more day${3 - count === 1 ? "" : "s"} and your trend line will appear.` : "Your trend line is on its way."}`}
-          </p>
-          <button className="btn btn-primary btn-large" onClick={onLogToday}>
-            <Icon.Plus /> Log today's weight
-          </button>
-        </div>
-      </section>
+      <Paper withBorder radius="md" p="xl" mb="md">
+        <Badge
+          variant="light"
+          size="sm"
+          leftSection={<IconSparkles size={12} />}
+          mb="md"
+        >
+          Just getting started
+        </Badge>
+        <Title order={2} fz={28} fw={500} lh={1.15} mb="xs">
+          {count === 0 ? "One small step begins it." : "You've made a beginning."}
+        </Title>
+        <Text c="dimmed" fz="md" lh={1.55} mb="lg" maw={460}>
+          {count === 0
+            ? "Log today's weight to start your record. The chart and stats appear once you've a few days behind you — usually three or four."
+            : `${count} entr${count === 1 ? "y" : "ies"} so far. ${3 - count > 0 ? `${3 - count} more day${3 - count === 1 ? "" : "s"} and your trend line will appear.` : "Your trend line is on its way."}`}
+        </Text>
+        <Button
+          size="md"
+          leftSection={<IconPlus size={16} />}
+          onClick={onLogToday}
+        >
+          Log today's weight
+        </Button>
+      </Paper>
 
       {count > 0 && (
-        <section style={{ marginBottom: 18 }}>
-          <div style={{ fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--md-on-surface-variant)", fontWeight: 500, marginBottom: 12 }}>
+        <Stack gap="sm" mb="md">
+          <Text fz="xs" c="dimmed" fw={500} tt="uppercase" lts="0.1em">
             Your entries so far
-          </div>
-          <div className="card">
+          </Text>
+          <Paper withBorder radius="md">
             {myEntries.slice(0, 3).map((e, i, arr) => (
-              <div key={e.id} style={{
-                display: "flex", justifyContent: "space-between", alignItems: "center",
-                padding: "16px 22px",
-                borderBottom: i < arr.length - 1 ? "1px solid var(--md-outline-variant)" : "none",
-              }}>
-                <div>
-                  <div className="display" style={{ fontSize: 18, lineHeight: 1.1 }}>
-                    {fmtDate(e.date, { relative: true })}
-                  </div>
-                  <div style={{ fontSize: 12, color: "var(--md-on-surface-variant)" }}>
-                    {fmtDateLong(e.date)}
-                  </div>
-                </div>
-                <div className="num display" style={{ fontSize: 22 }}>
-                  {fmtWeight(e.weightKg, "metric")}
-                </div>
-              </div>
+              <Box key={e.id}>
+                <Group justify="space-between" align="center" px="lg" py="md">
+                  <Box>
+                    <Text fz="md" fw={500} lh={1.1}>
+                      {fmtDate(e.date, { relative: true })}
+                    </Text>
+                    <Text c="dimmed" fz="xs">
+                      {fmtDateLong(e.date)}
+                    </Text>
+                  </Box>
+                  <Text fz={22} fw={500} style={{ fontVariantNumeric: "tabular-nums" }}>
+                    {fmtWeight(e.weightKg, "metric")}
+                  </Text>
+                </Group>
+                {i < arr.length - 1 && <Divider />}
+              </Box>
             ))}
-          </div>
-        </section>
+          </Paper>
+        </Stack>
       )}
 
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
         <HintCard
-          icon={<Icon.People />}
+          icon={<IconUsers size={14} />}
           title="Bring others in"
           body="Add household members from Profile → Household. Everyone gets their own dashboard."
         />
         <HintCard
-          icon={<Icon.List />}
+          icon={<IconList size={14} />}
           title="Backfill old entries"
           body="If you've been weighing for a while, paste in past dates from Entries."
         />
-      </section>
-    </div>
+      </SimpleGrid>
+    </Box>
   );
 }
 
 function HintCard({ icon, title, body }) {
   return (
-    <div className="card" style={{ padding: 18 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--md-on-surface-variant)", marginBottom: 8 }}>
+    <Paper withBorder radius="md" p="md">
+      <Group gap={8} c="dimmed" mb={6}>
         {icon}
-        <span style={{ fontSize: 11.5, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500 }}>{title}</span>
-      </div>
-      <div style={{ fontSize: 13.5, color: "var(--md-on-surface)", lineHeight: 1.5 }}>{body}</div>
-    </div>
+        <Text fz="xs" fw={500} tt="uppercase" lts="0.08em">{title}</Text>
+      </Group>
+      <Text fz="sm" lh={1.5}>{body}</Text>
+    </Paper>
   );
 }
 
@@ -3571,7 +2955,7 @@ const AVATAR_COLORS = [
 ];
 
 Object.assign(window, {
-  WeeklyDigestScreen, AddMemberModal, FirstOfMonthCard, EmptyDashboard, HintCard,
+  AddMemberModal, FirstOfMonthCard, EmptyDashboard, HintCard,
   AVATAR_COLORS,
 });
 
@@ -3603,31 +2987,58 @@ function HouseholdScreenUnified({ me, members, entries, units, onTogglePrivacy, 
   const householdMonthConsistency = summaries.reduce((a, s) => a + s.monthEntries.length / ranges.daysInMonth, 0) / Math.max(1, summaries.length);
 
   return (
-    <div style={{ animation: "fadeIn 320ms ease both" }}>
-      <header style={{ marginBottom: 22 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-          <h1 className="serif" style={{ fontSize: "clamp(28px, 3.6vw, 40px)", fontWeight: 400, margin: 0, letterSpacing: "-0.02em" }}>
-            {mode === "now" && (<><span className="serif-it">The</span> household</>)}
-            {mode === "week" && (<>Week of <span className="serif-it">{ranges.weekStart.toLocaleDateString("en-US", { month: "long", day: "numeric" })}</span></>)}
-            {mode === "month" && (<>Month of <span className="serif-it">{ranges.monthStart.toLocaleDateString("en-US", { month: "long", year: "numeric" })}</span></>)}
-          </h1>
+    <Box>
+      <Stack gap="sm" mb="xl">
+        <Group justify="space-between" wrap="wrap" gap="md">
+          <Title order={1} fz={{ base: 28, sm: 36 }} fw={500}>
+            {mode === "now" && "The household"}
+            {mode === "week" && `Week of ${ranges.weekStart.toLocaleDateString("en-US", { month: "long", day: "numeric" })}`}
+            {mode === "month" && `Month of ${ranges.monthStart.toLocaleDateString("en-US", { month: "long", year: "numeric" })}`}
+          </Title>
           {onAddMember && (
-            <button className="btn" onClick={onAddMember}>
-              <Icon.Plus /> Add a member
-            </button>
+            <Button
+              variant="default"
+              leftSection={<IconPlus size={16} />}
+              onClick={onAddMember}
+            >
+              Add a member
+            </Button>
           )}
-        </div>
-        <p style={{ color: "var(--md-on-surface-variant)", fontSize: 14, margin: "6px 0 0 0", maxWidth: 580 }}>
-          {mode === "now" && "Everyone's quiet progress, in one view. Exact numbers stay private unless a member chooses to share them."}
-          {mode === "week" && (<>Together the household logged <span className="num" style={{ color: "var(--md-on-surface)" }}>{totalThisWeek}</span> {totalThisWeek === 1 ? "entry" : "entries"} · {Math.round(householdWeekConsistency * 100)}% of days covered.</>)}
-          {mode === "month" && (<>Together: <span className="num" style={{ color: "var(--md-on-surface)" }}>{totalThisMonth}</span> {totalThisMonth === 1 ? "entry" : "entries"} across {ranges.daysInMonth} days · {Math.round(householdMonthConsistency * 100)}% covered.</>)}
-        </p>
-        <div style={{ marginTop: 18 }}>
-          <ModeToggle value={mode} onChange={setMode} />
-        </div>
-      </header>
+        </Group>
+        <Text c="dimmed" fz="sm" maw={580}>
+          {mode === "now" &&
+            "Everyone's quiet progress, in one view. Exact numbers stay private unless a member chooses to share them."}
+          {mode === "week" && (
+            <>
+              Together the household logged{" "}
+              <Text component="span" c="text">{totalThisWeek}</Text>{" "}
+              {totalThisWeek === 1 ? "entry" : "entries"} ·{" "}
+              {Math.round(householdWeekConsistency * 100)}% of days covered.
+            </>
+          )}
+          {mode === "month" && (
+            <>
+              Together:{" "}
+              <Text component="span" c="text">{totalThisMonth}</Text>{" "}
+              {totalThisMonth === 1 ? "entry" : "entries"} across{" "}
+              {ranges.daysInMonth} days ·{" "}
+              {Math.round(householdMonthConsistency * 100)}% covered.
+            </>
+          )}
+        </Text>
+        <SegmentedControl
+          value={mode}
+          onChange={setMode}
+          data={[
+            { value: "now", label: "Now" },
+            { value: "week", label: "This week" },
+            { value: "month", label: "This month" },
+          ]}
+          maw={360}
+        />
+      </Stack>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 18 }}>
+      <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
         {summaries.map((s) => (
           <MemberCard
             key={s.m.id}
@@ -3640,31 +3051,8 @@ function HouseholdScreenUnified({ me, members, entries, units, onTogglePrivacy, 
             onTogglePrivacy={onTogglePrivacy}
           />
         ))}
-      </div>
-    </div>
-  );
-}
-
-function ModeToggle({ value, onChange }) {
-  const opts = [
-    { id: "now", label: "Now" },
-    { id: "week", label: "This week" },
-    { id: "month", label: "This month" },
-  ];
-  return (
-    <div className="range-bar" role="tablist" aria-label="Household timeframe">
-      {opts.map((o) => (
-        <button
-          key={o.id}
-          role="tab"
-          aria-selected={value === o.id}
-          data-active={value === o.id}
-          onClick={() => onChange(o.id)}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
+      </SimpleGrid>
+    </Box>
   );
 }
 
@@ -3699,68 +3087,91 @@ function summarize(m, allEntries, ranges) {
 }
 
 function MemberCard({ mode, summary, ranges, entries, me, units, onTogglePrivacy }) {
-  const { m, latest, streak } = summary;
+  const { m, streak } = summary;
   const isMe = m.id === me.id;
   const showDetails = m.shareDetails || isMe;
   const broken = streak.broken;
-  const sinceLast = streak.lastEntry ? Math.floor((+window.__fixtures.today - +new Date(streak.lastEntry.date)) / 86400000) : null;
+  const sinceLast = streak.lastEntry
+    ? Math.floor(
+        (+window.__fixtures.today - +new Date(streak.lastEntry.date)) / 86400000,
+      )
+    : null;
 
   return (
-    <article
-      className="card"
-      style={{
-        padding: 22,
-        opacity: broken ? 0.66 : 1,
-        position: "relative",
-        transition: "opacity 200ms ease",
-      }}
+    <Paper
+      withBorder
+      radius="md"
+      p="lg"
+      pos="relative"
+      style={{ opacity: broken ? 0.66 : 1, transition: "opacity 200ms ease" }}
     >
       {isMe && (
-        <span className="chip" style={{ position: "absolute", top: 14, right: 14, fontSize: 10.5 }}>you</span>
+        <Badge
+          size="xs"
+          variant="default"
+          pos="absolute"
+          top={12}
+          right={12}
+        >
+          you
+        </Badge>
       )}
-      <header style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
+      <Group align="center" gap="md" mb="md" wrap="nowrap">
         <Avatar member={m} size={48} />
-        <div>
-          <div className="serif" style={{ fontSize: 22, lineHeight: 1.1, letterSpacing: "-0.01em" }}>
+        <Box style={{ flex: 1, minWidth: 0 }}>
+          <Text fz={20} fw={500} lh={1.1} truncate>
             {m.displayName}
-          </div>
-          <div style={{ fontSize: 12, color: "var(--md-on-surface-variant)", marginTop: 2, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          </Text>
+          <Group gap={6} mt={2} fz="xs" c="dimmed" wrap="wrap">
             {broken ? (
-              <span className="chip chip-warn" style={{ fontSize: 10.5 }}>streak reset · {sinceLast}d ago</span>
+              <Badge size="xs" variant="light" color="github-gray">
+                streak reset · {sinceLast}d ago
+              </Badge>
             ) : streak.length > 0 ? (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                <Icon.Flame /> <span className="num mono">{streak.length}</span>-day streak
-              </span>
+              <Group gap={4} align="center">
+                <IconFlame size={12} />
+                <Text fz="xs" ff="monospace">{streak.length}</Text>
+                <Text fz="xs">-day streak</Text>
+              </Group>
             ) : (
-              <span className="serif-it">just starting out</span>
+              <Text fz="xs" fs="italic">just starting out</Text>
             )}
             {!showDetails && !isMe && (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: "var(--md-outline)" }}>
-                <Icon.Lock /> private
-              </span>
+              <Group gap={3} align="center" c="dimmed">
+                <IconLock size={11} />
+                <Text fz="xs">private</Text>
+              </Group>
             )}
-          </div>
-        </div>
-      </header>
+          </Group>
+        </Box>
+      </Group>
 
-      {mode === "now" && <NowBody summary={summary} entries={entries} units={units} showDetails={showDetails} />}
-      {mode === "week" && <WeekBody summary={summary} ranges={ranges} units={units} showDetails={showDetails} />}
-      {mode === "month" && <MonthBody summary={summary} ranges={ranges} units={units} showDetails={showDetails} />}
+      {mode === "now" && (
+        <NowBody summary={summary} entries={entries} units={units} showDetails={showDetails} />
+      )}
+      {mode === "week" && (
+        <WeekBody summary={summary} ranges={ranges} units={units} showDetails={showDetails} />
+      )}
+      {mode === "month" && (
+        <MonthBody summary={summary} ranges={ranges} units={units} showDetails={showDetails} />
+      )}
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--md-outline-variant)", paddingTop: 14, marginTop: 14 }}>
+      <Divider mt="md" mb="md" />
+      <Group justify="space-between" align="center">
         <Sparkline entries={entries} width={120} height={28} />
         {isMe && (
-          <button
-            className="btn-ghost focus-ring"
+          <Button
+            variant="subtle"
+            color="gray"
+            size="compact-sm"
+            leftSection={<IconLock size={12} />}
             onClick={onTogglePrivacy}
-            style={{ padding: "4px 10px", border: 0, background: "transparent", color: "var(--md-on-surface-variant)", fontSize: 12, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}
           >
-            <Icon.Lock />
             {m.shareDetails ? "Sharing details" : "Hiding details"}
-          </button>
+          </Button>
         )}
-      </div>
-    </article>
+      </Group>
+    </Paper>
   );
 }
 
@@ -3771,20 +3182,22 @@ function NowBody({ summary, entries, units, showDetails }) {
   const trend = trendDirection(entries, 14);
 
   return (
-    <>
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-          <span className="md-label-s" style={{ textTransform: "uppercase", color: "var(--md-on-surface-variant)" }}>Toward goal</span>
-          <span className="serif" style={{ fontSize: 18 }}>
-            <span className="num">{Math.round(progress * 100)}</span>
-            <span style={{ fontSize: 13, color: "var(--md-on-surface-variant)" }}>%</span>
-          </span>
-        </div>
+    <Stack gap="md">
+      <Box>
+        <Group justify="space-between" align="baseline" mb={8}>
+          <Text fz="xs" c="dimmed" fw={500} tt="uppercase" lts="0.06em">
+            Toward goal
+          </Text>
+          <Text fz={18} fw={500} style={{ fontVariantNumeric: "tabular-nums" }}>
+            {Math.round(progress * 100)}
+            <Text component="span" fz={13} c="dimmed">%</Text>
+          </Text>
+        </Group>
         <ProgressBar fraction={progress} />
-      </div>
+      </Box>
 
       {showDetails ? (
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 14 }}>
+        <SimpleGrid cols={2} spacing="sm">
           <Stat label="Now" value={fmtWeight(latest?.weightKg, units, { unitless: true })} suffix={unitSuffix(units)} />
           <Stat label="Goal" value={fmtWeight(m.goalWeightKg, units, { unitless: true })} dim />
           <Stat label="BMI" value={calcBMI(latest?.weightKg, m.heightCm)?.toFixed(1)} />
@@ -3793,16 +3206,23 @@ function NowBody({ summary, entries, units, showDetails }) {
             value={fmtDelta(trend.deltaKg, units)}
             tone={trend.direction === "down" ? "good" : trend.direction === "up" ? "warn" : null}
           />
-        </div>
+        </SimpleGrid>
       ) : (
-        <div style={{ padding: "12px 14px", background: "var(--md-surface-container)", borderRadius: 12, fontSize: 13, color: "var(--md-on-surface-variant)" }}>
-          <div className="serif-it">Sharing relative progress only.</div>
-          <div style={{ marginTop: 4, fontSize: 12 }}>
-            {trend.direction === "down" ? "Trending downward" : trend.direction === "up" ? "Trending upward" : "Holding steady"} this fortnight.
-          </div>
-        </div>
+        <Paper bg="var(--mantine-color-default-hover)" p="sm" radius="md">
+          <Text fz="sm" fs="italic" c="dimmed">
+            Sharing relative progress only.
+          </Text>
+          <Text fz="xs" c="dimmed" mt={4}>
+            {trend.direction === "down"
+              ? "Trending downward"
+              : trend.direction === "up"
+                ? "Trending upward"
+                : "Holding steady"}{" "}
+            this fortnight.
+          </Text>
+        </Paper>
       )}
-    </>
+    </Stack>
   );
 }
 
@@ -3810,51 +3230,87 @@ function NowBody({ summary, entries, units, showDetails }) {
 function WeekBody({ summary, ranges, units, showDetails }) {
   const { m, weekEntries, weekDelta, weekLowest } = summary;
   const today = window.__fixtures.today;
-  const positive = weekDelta != null && ((m.startWeightKg > m.goalWeightKg && weekDelta < 0) || (m.startWeightKg < m.goalWeightKg && weekDelta > 0));
+  const positive =
+    weekDelta != null &&
+    ((m.startWeightKg > m.goalWeightKg && weekDelta < 0) ||
+      (m.startWeightKg < m.goalWeightKg && weekDelta > 0));
   const consistency = weekEntries.length / 7;
 
   return (
-    <>
-      <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+    <Stack gap="md">
+      <Group gap={6} wrap="nowrap">
         {Array.from({ length: 7 }).map((_, i) => {
           const day = new Date(+ranges.weekStart + i * 86400000);
           const dayKey = day.toISOString().slice(0, 10);
           const has = weekEntries.find((e) => e.date.slice(0, 10) === dayKey);
           const isToday = day.toDateString() === today.toDateString();
           return (
-            <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-              <div title={fmtDate(day)} style={{
-                width: "100%", height: 8, borderRadius: 999,
-                background: has ? "var(--md-primary)" : "var(--md-surface-container-highest)",
-                opacity: has ? 1 : isToday ? 0.55 : 0.35,
-                boxShadow: isToday && !has ? `inset 0 0 0 1.5px var(--md-primary)` : "none",
-              }} />
-              <div style={{ fontSize: 10, color: "var(--md-on-surface-variant)", letterSpacing: "0.04em" }}>
+            <Stack key={i} gap={6} align="center" style={{ flex: 1 }}>
+              <Box
+                title={fmtDate(day)}
+                w="100%"
+                h={8}
+                style={{
+                  borderRadius: 999,
+                  background: has
+                    ? "var(--mantine-primary-color-filled)"
+                    : "var(--mantine-color-default-border)",
+                  opacity: has ? 1 : isToday ? 0.55 : 0.35,
+                  boxShadow:
+                    isToday && !has
+                      ? "inset 0 0 0 1.5px var(--mantine-primary-color-filled)"
+                      : "none",
+                }}
+              />
+              <Text fz={10} c="dimmed" lts="0.04em">
                 {day.toLocaleDateString("en-US", { weekday: "narrow" })}
-              </div>
-            </div>
+              </Text>
+            </Stack>
           );
         })}
-      </div>
+      </Group>
 
-      <div style={{ display: "grid", gridTemplateColumns: showDetails ? "1fr 1fr 1fr" : "1fr 1fr", gap: 14 }}>
+      <SimpleGrid cols={showDetails ? 3 : 2} spacing="sm">
         <Stat label="Days" value={`${weekEntries.length}/7`} />
         {showDetails ? (
           <>
-            <Stat label="Delta" value={weekDelta != null ? fmtDelta(weekDelta, units) : "—"} tone={weekDelta == null ? null : positive ? "good" : Math.abs(weekDelta) < 0.15 ? null : "warn"} />
-            <Stat label="Lowest" value={weekLowest != null ? fmtWeight(weekLowest, units, { unitless: true }) : "—"} />
+            <Stat
+              label="Delta"
+              value={weekDelta != null ? fmtDelta(weekDelta, units) : "—"}
+              tone={
+                weekDelta == null
+                  ? null
+                  : positive
+                    ? "good"
+                    : Math.abs(weekDelta) < 0.15
+                      ? null
+                      : "warn"
+              }
+            />
+            <Stat
+              label="Lowest"
+              value={weekLowest != null ? fmtWeight(weekLowest, units, { unitless: true }) : "—"}
+            />
           </>
         ) : (
           <Stat
             label="Direction"
-            value={weekDelta == null ? "—" : Math.abs(weekDelta) < 0.15 ? "steady" : positive ? "↓ on track" : "↑ slight"}
+            value={
+              weekDelta == null
+                ? "—"
+                : Math.abs(weekDelta) < 0.15
+                  ? "steady"
+                  : positive
+                    ? "↓ on track"
+                    : "↑ slight"
+            }
             tone={weekDelta == null ? null : positive ? "good" : null}
           />
         )}
-      </div>
+      </SimpleGrid>
 
       <Encouragement copy={weekCopy({ weekEntries, weekDelta, consistency, positive })} />
-    </>
+    </Stack>
   );
 }
 
@@ -3862,19 +3318,24 @@ function WeekBody({ summary, ranges, units, showDetails }) {
 function MonthBody({ summary, ranges, units, showDetails }) {
   const { m, monthEntries, monthDelta, monthLowest, monthSwing } = summary;
   const today = window.__fixtures.today;
-  const positive = monthDelta != null && ((m.startWeightKg > m.goalWeightKg && monthDelta < 0) || (m.startWeightKg < m.goalWeightKg && monthDelta > 0));
+  const positive =
+    monthDelta != null &&
+    ((m.startWeightKg > m.goalWeightKg && monthDelta < 0) ||
+      (m.startWeightKg < m.goalWeightKg && monthDelta > 0));
   const consistency = monthEntries.length / ranges.daysInMonth;
   const dayKeys = new Set(monthEntries.map((e) => e.date.slice(0, 10)));
 
-  // Build a calendar-shaped grid: weeks of 7 dots starting from the first day of the month.
-  // Pad leading days to align Mon-Sun; we use Sun-Sat (US default) for compactness.
   const firstDay = new Date(ranges.monthStart);
-  const startOffset = firstDay.getDay(); // 0..6 Sun-Sat
+  const startOffset = firstDay.getDay();
   const totalCells = Math.ceil((startOffset + ranges.daysInMonth) / 7) * 7;
   const cells = Array.from({ length: totalCells }).map((_, idx) => {
     const dayNum = idx - startOffset + 1;
     if (dayNum < 1 || dayNum > ranges.daysInMonth) return { empty: true };
-    const date = new Date(ranges.monthStart.getFullYear(), ranges.monthStart.getMonth(), dayNum);
+    const date = new Date(
+      ranges.monthStart.getFullYear(),
+      ranges.monthStart.getMonth(),
+      dayNum,
+    );
     const key = date.toISOString().slice(0, 10);
     return {
       empty: false,
@@ -3886,21 +3347,24 @@ function MonthBody({ summary, ranges, units, showDetails }) {
   });
 
   return (
-    <>
-      {/* Calendar dot grid */}
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 6 }}>
+    <Stack gap="md">
+      <Box>
+        <SimpleGrid cols={7} spacing={4} mb={6}>
           {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-            <div key={i} style={{ fontSize: 9.5, textAlign: "center", color: "var(--md-on-surface-variant)", letterSpacing: "0.06em" }}>{d}</div>
+            <Text key={i} fz={9.5} ta="center" c="dimmed" lts="0.06em">
+              {d}
+            </Text>
           ))}
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
+        </SimpleGrid>
+        <SimpleGrid cols={7} spacing={4}>
           {cells.map((c, i) => {
-            if (c.empty) return <div key={i} style={{ aspectRatio: "1 / 1" }} />;
-            const bg = c.has ? "var(--md-primary)" : "var(--md-surface-container-highest)";
+            if (c.empty) return <Box key={i} style={{ aspectRatio: "1 / 1" }} />;
+            const bg = c.has
+              ? "var(--mantine-primary-color-filled)"
+              : "var(--mantine-color-default-border)";
             const op = c.has ? 1 : c.isFuture ? 0.18 : c.isToday ? 0.55 : 0.45;
             return (
-              <div
+              <Box
                 key={i}
                 title={fmtDate(c.date)}
                 style={{
@@ -3908,63 +3372,116 @@ function MonthBody({ summary, ranges, units, showDetails }) {
                   borderRadius: 4,
                   background: bg,
                   opacity: op,
-                  boxShadow: c.isToday && !c.has ? "inset 0 0 0 1.5px var(--md-primary)" : "none",
+                  boxShadow:
+                    c.isToday && !c.has
+                      ? "inset 0 0 0 1.5px var(--mantine-primary-color-filled)"
+                      : "none",
                 }}
               />
             );
           })}
-        </div>
-      </div>
+        </SimpleGrid>
+      </Box>
 
-      <div style={{ display: "grid", gridTemplateColumns: showDetails ? "1fr 1fr 1fr" : "1fr 1fr", gap: 14 }}>
+      <SimpleGrid cols={showDetails ? 3 : 2} spacing="sm">
         <Stat label="Days" value={`${monthEntries.length}/${ranges.daysInMonth}`} />
         {showDetails ? (
           <>
-            <Stat label="Delta" value={monthDelta != null ? fmtDelta(monthDelta, units) : "—"} tone={monthDelta == null ? null : positive ? "good" : Math.abs(monthDelta) < 0.3 ? null : "warn"} />
-            <Stat label="Swing" value={monthSwing != null ? fmtDelta(monthSwing, units) : "—"} dim />
+            <Stat
+              label="Delta"
+              value={monthDelta != null ? fmtDelta(monthDelta, units) : "—"}
+              tone={
+                monthDelta == null
+                  ? null
+                  : positive
+                    ? "good"
+                    : Math.abs(monthDelta) < 0.3
+                      ? null
+                      : "warn"
+              }
+            />
+            <Stat
+              label="Swing"
+              value={monthSwing != null ? fmtDelta(monthSwing, units) : "—"}
+              dim
+            />
           </>
         ) : (
           <Stat
             label="Direction"
-            value={monthDelta == null ? "—" : Math.abs(monthDelta) < 0.3 ? "steady" : positive ? "↓ on track" : "↑ drifting"}
+            value={
+              monthDelta == null
+                ? "—"
+                : Math.abs(monthDelta) < 0.3
+                  ? "steady"
+                  : positive
+                    ? "↓ on track"
+                    : "↑ drifting"
+            }
             tone={monthDelta == null ? null : positive ? "good" : null}
           />
         )}
-      </div>
+      </SimpleGrid>
 
-      <Encouragement copy={monthCopy({ monthEntries, monthDelta, consistency, positive, daysInMonth: ranges.daysInMonth })} />
-    </>
+      <Encouragement
+        copy={monthCopy({
+          monthEntries,
+          monthDelta,
+          consistency,
+          positive,
+          daysInMonth: ranges.daysInMonth,
+        })}
+      />
+    </Stack>
   );
 }
 
 // ----- Shared bits -----
 function Stat({ label, value, tone, dim, suffix }) {
-  const color = tone === "good" ? "var(--md-primary)" : tone === "warn" ? "var(--md-error)" : dim ? "var(--md-on-surface-variant)" : "var(--md-on-surface)";
+  const color =
+    tone === "good"
+      ? "var(--mantine-color-github-green-text)"
+      : tone === "warn"
+        ? "var(--mantine-color-github-red-text)"
+        : dim
+          ? "var(--mantine-color-dimmed)"
+          : undefined;
   return (
-    <div>
-      <div className="md-label-s" style={{ textTransform: "uppercase", color: "var(--md-on-surface-variant)" }}>{label}</div>
-      <div className="num serif" style={{ fontSize: 20, marginTop: 4, color, lineHeight: 1.15, letterSpacing: "-0.01em" }}>
+    <Box>
+      <Text fz="xs" c="dimmed" fw={500} tt="uppercase" lts="0.06em">
+        {label}
+      </Text>
+      <Text
+        fz={20}
+        fw={500}
+        mt={4}
+        lh={1.15}
+        c={color}
+        style={{ fontVariantNumeric: "tabular-nums" }}
+      >
         {value}
-        {suffix && <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--md-on-surface-variant)", marginLeft: 4 }}>{suffix}</span>}
-      </div>
-    </div>
+        {suffix && (
+          <Text component="span" ff="monospace" fz={11} c="dimmed" ml={4}>
+            {suffix}
+          </Text>
+        )}
+      </Text>
+    </Box>
   );
 }
 
 function Encouragement({ copy }) {
   return (
-    <div style={{
-      fontStyle: "italic",
-      fontFamily: "var(--serif)",
-      fontSize: 14.5,
-      color: "var(--md-on-surface)",
-      lineHeight: 1.45,
-      paddingTop: 14,
-      marginTop: 14,
-      borderTop: "1px dashed var(--md-outline-variant)",
-    }}>
+    <Text
+      fs="italic"
+      fz="sm"
+      lh={1.45}
+      pt="md"
+      mt="md"
+      style={{ borderTop: "1px dashed var(--mantine-color-default-border)" }}
+    >
       {copy}
-    </div>
+    </Text>
   );
 }
 
@@ -4019,138 +3536,79 @@ function useStore() {
   return __store.state;
 }
 
-function NavRail({ tab, onTab, me }) {
-  const tabs = [
-    { id: "dashboard", label: "Dashboard", icon: <Icon.Home /> },
-    { id: "entries", label: "Entries", icon: <Icon.List /> },
-    { id: "household", label: "Household", icon: <Icon.People /> },
-    { id: "profile", label: "Profile", icon: <Icon.Profile /> },
-  ];
-  return (
-    <aside style={{
-      display: "flex", flexDirection: "column",
-      padding: "24px 12px",
-      background: "var(--md-surface-container-low)",
-      position: "sticky", top: 0, height: "100vh",
-      width: 240,
-    }}>
-      <div style={{ marginBottom: 24, padding: "0 16px 8px", width: "100%", display: "flex", justifyContent: "center" }}>
-        <Logo size={96} />
-      </div>
-      <nav style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => onTab(t.id)}
-            className="focus-ring"
-            style={{
-              display: "flex", alignItems: "center", gap: 12,
-              padding: "0 16px",
-              height: 56,
-              border: 0,
-              borderRadius: 9999,
-              background: tab === t.id ? "var(--md-secondary-container)" : "transparent",
-              color: tab === t.id ? "var(--md-on-secondary-container)" : "var(--md-on-surface-variant)",
-              fontSize: 14, fontWeight: tab === t.id ? 500 : 500,
-              letterSpacing: "0.1px",
-              cursor: "pointer",
-              textAlign: "left",
-              transition: "background 160ms cubic-bezier(.2,0,0,1), color 160ms ease",
-              fontFamily: "var(--sans)",
-            }}
-            onMouseEnter={(e) => { if (tab !== t.id) e.currentTarget.style.background = "rgba(0,0,0,0.04)"; }}
-            onMouseLeave={(e) => { if (tab !== t.id) e.currentTarget.style.background = "transparent"; }}
-          >
-            <span style={{ display: "inline-flex", color: tab === t.id ? "var(--md-on-secondary-container)" : "var(--md-on-surface-variant)" }}>{t.icon}</span>
-            {t.label}
-          </button>
-        ))}
-      </nav>
+const NAV_TABS = [
+  { id: "dashboard", label: "Dashboard", mobileLabel: "Today", icon: IconHome },
+  { id: "entries", label: "Entries", mobileLabel: "Entries", icon: IconList },
+  { id: "household", label: "Household", mobileLabel: "Household", icon: IconUsers },
+  { id: "profile", label: "Profile", mobileLabel: "Profile", icon: IconUser },
+];
 
-      {/* Member chip */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", marginTop: 12, borderTop: "1px solid var(--md-outline-variant)" }}>
-        <Avatar member={me} size={36} />
-        <div style={{ minWidth: 0 }}>
-          <div className="md-title-s" style={{ color: "var(--md-on-surface)" }}>{me.displayName}</div>
-          <div className="md-body-s" style={{ color: "var(--md-on-surface-variant)" }}>{window.__fixtures.household.name}</div>
-        </div>
-      </div>
-    </aside>
+function NavLink({ active, label, icon: Icon, onClick }) {
+  return (
+    <UnstyledButton
+      onClick={onClick}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "0 16px",
+        height: 48,
+        borderRadius: 8,
+        background: active ? "var(--mantine-color-default-hover)" : "transparent",
+        color: active ? "var(--mantine-color-text)" : "var(--mantine-color-dimmed)",
+        fontSize: 14,
+        fontWeight: 500,
+        width: "100%",
+        cursor: "pointer",
+      }}
+    >
+      <Icon size={18} />
+      {label}
+    </UnstyledButton>
   );
 }
 
-function MobileNav({ tab, onTab }) {
-  const tabs = [
-    { id: "dashboard", label: "Today", icon: <Icon.Home /> },
-    { id: "entries", label: "Entries", icon: <Icon.List /> },
-    { id: "household", label: "Household", icon: <Icon.People /> },
-    { id: "profile", label: "Profile", icon: <Icon.Profile /> },
-  ];
+function MobileTabButton({ active, label, icon: Icon, onClick }) {
   return (
-    <nav style={{
-      position: "fixed",
-      left: 0, right: 0, bottom: 0,
-      background: "var(--md-surface-container)",
-      borderTop: "0",
-      padding: "12px 8px calc(env(safe-area-inset-bottom, 0px) + 16px) 8px",
-      display: "flex",
-      justifyContent: "space-around",
-      zIndex: 40,
-      height: 80,
-      boxShadow: "var(--md-elev-2)",
-    }}>
-      {tabs.map((t) => (
-        <button
-          key={t.id}
-          onClick={() => onTab(t.id)}
-          className="focus-ring"
-          style={{
-            display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-            padding: "0",
-            border: 0, background: "transparent",
-            color: tab === t.id ? "var(--md-on-surface)" : "var(--md-on-surface-variant)",
-            fontSize: 12, fontWeight: 500,
-            letterSpacing: "0.5px",
-            cursor: "pointer",
-            fontFamily: "var(--sans)",
-            flex: 1,
-          }}
-        >
-          <span style={{
-            display: "inline-flex", alignItems: "center", justifyContent: "center",
-            width: 64, height: 32,
-            borderRadius: 9999,
-            background: tab === t.id ? "var(--md-secondary-container)" : "transparent",
-            color: tab === t.id ? "var(--md-on-secondary-container)" : "var(--md-on-surface-variant)",
-            transition: "background 200ms cubic-bezier(.2,0,0,1)",
-          }}>{t.icon}</span>
-          {t.label}
-        </button>
-      ))}
-    </nav>
-  );
-}
-
-function MobileHeader({ me, tab }) {
-  const titles = { dashboard: "Today", entries: "Entries", household: "Household", profile: "Profile" };
-  void titles;
-  return (
-    <header style={{
-      display: "flex", justifyContent: "space-between", alignItems: "center",
-      padding: "12px 16px",
-      position: "sticky", top: 0,
-      background: "var(--md-surface-container)",
-      zIndex: 30,
-      height: 64,
-    }}>
-      <Logo size={40} />
-      <Avatar member={me} size={32} />
-    </header>
+    <UnstyledButton
+      onClick={onClick}
+      style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 4,
+        color: active ? "var(--mantine-color-text)" : "var(--mantine-color-dimmed)",
+        cursor: "pointer",
+        padding: "8px 0",
+      }}
+    >
+      <Box
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 56,
+          height: 28,
+          borderRadius: 9999,
+          background: active ? "var(--mantine-color-default-hover)" : "transparent",
+          transition: "background 160ms ease",
+        }}
+      >
+        <Icon size={18} />
+      </Box>
+      <Text fz={11} fw={500}>
+        {label}
+      </Text>
+    </UnstyledButton>
   );
 }
 
 function App() {
   const state = useStore();
+  const { setColorScheme } = useMantineColorScheme();
+  const isMobile = useMediaQuery("(max-width: 767px)") ?? false;
   const [tab, setTab] = useState("dashboard");
   const [units, setUnits] = useState("metric");
   const [logModal, setLogModal] = useState(null);
@@ -4158,15 +3616,8 @@ function App() {
   const [milestone, setMilestone] = useState(null);
   const [theme, setTheme] = useState("system");
   const [tweaks, setTweaks] = useTweaks(TWEAK_DEFAULTS);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
   const [bootstrapped, setBootstrapped] = useState(false);
   const [bootstrapError, setBootstrapError] = useState(null);
-
-  useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth < 900);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
 
   useEffect(() => {
     let active = true;
@@ -4182,12 +3633,9 @@ function App() {
     };
   }, []);
 
-  // Apply theme
   useEffect(() => {
-    const t = theme;
-    if (t === "light" || !t) document.documentElement.removeAttribute("data-theme");
-    else document.documentElement.dataset.theme = t;
-  }, [theme]);
+    setColorScheme(theme === "system" ? "auto" : theme);
+  }, [theme, setColorScheme]);
 
   const me = state.members.find((m) => m.isMe);
 
@@ -4222,37 +3670,42 @@ function App() {
 
   if (!bootstrapped) {
     return (
-      <div className="app-shell" style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
+      <Center mih="100vh">
         <Logo size={40} />
-      </div>
+      </Center>
     );
   }
 
   if (bootstrapError) {
     return (
-      <div className="app-shell" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
-        <section className="card" style={{ maxWidth: 420, padding: 28, textAlign: "center" }}>
+      <Center mih="100vh" p="md">
+        <Paper withBorder radius="lg" maw={420} p="xl" ta="center">
           <Logo size={40} />
-          <h1 className="md-title-l" style={{ margin: "20px 0 8px" }}>Home Assistant sign-in required</h1>
-          <p className="md-body-m" style={{ color: "var(--md-on-surface-variant)", margin: 0 }}>
-            Open this add-on through Home Assistant ingress to load your health profile.
-          </p>
-        </section>
-      </div>
+          <Title order={1} fz={22} fw={500} mt="md">
+            Home Assistant sign-in required
+          </Title>
+          <Text c="dimmed" fz="sm" mt="xs">
+            Open this add-on through Home Assistant ingress to load your health
+            profile.
+          </Text>
+        </Paper>
+      </Center>
     );
   }
 
   if (!me) {
     return (
-      <div className="app-shell" style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
-        <section className="card" style={{ maxWidth: 420, padding: 28, textAlign: "center" }}>
+      <Center mih="100vh" p="md">
+        <Paper withBorder radius="lg" maw={420} p="xl" ta="center">
           <Logo size={40} />
-          <h1 className="md-title-l" style={{ margin: "20px 0 8px" }}>Profile unavailable</h1>
-          <p className="md-body-m" style={{ color: "var(--md-on-surface-variant)", margin: 0 }}>
+          <Title order={1} fz={22} fw={500} mt="md">
+            Profile unavailable
+          </Title>
+          <Text c="dimmed" fz="sm" mt="xs">
             Home Assistant Health could not load your profile.
-          </p>
-        </section>
-      </div>
+          </Text>
+        </Paper>
+      </Center>
     );
   }
 
@@ -4291,20 +3744,72 @@ function App() {
 
   return (
     <>
-      <div className="app-shell">
-        {!isMobile && <NavRail tab={tab} onTab={setTab} me={me} />}
-        <main style={{
-          padding: isMobile ? "0 0 100px 0" : "44px 56px 80px 56px",
-          minWidth: 0,
-          overflowX: "hidden",
-        }}>
-          {isMobile && <MobileHeader me={me} tab={tab} />}
-          <div style={{ padding: isMobile ? "20px 18px 24px" : 0, maxWidth: 1180 }}>
+      <AppShell
+        navbar={{ width: 240, breakpoint: "md", collapsed: { mobile: true } }}
+        header={{ height: 60, collapsed: !isMobile }}
+        footer={{ height: 80, collapsed: !isMobile }}
+        padding={{ base: "md", md: "xl" }}
+      >
+        <AppShell.Header>
+          <Group h="100%" px="md" justify="space-between">
+            <Logo size={36} />
+            <Avatar member={me} size={32} />
+          </Group>
+        </AppShell.Header>
+
+        <AppShell.Navbar p="md">
+          <AppShell.Section mb="lg">
+            <Center>
+              <Logo size={72} />
+            </Center>
+          </AppShell.Section>
+          <AppShell.Section grow>
+            <Stack gap={4}>
+              {NAV_TABS.map((t) => (
+                <NavLink
+                  key={t.id}
+                  active={tab === t.id}
+                  label={t.label}
+                  icon={t.icon}
+                  onClick={() => setTab(t.id)}
+                />
+              ))}
+            </Stack>
+          </AppShell.Section>
+          <AppShell.Section>
+            <Divider mb="sm" />
+            <Group gap="sm" wrap="nowrap">
+              <Avatar member={me} size={36} />
+              <Box style={{ minWidth: 0, flex: 1 }}>
+                <Text fz="sm" fw={500} truncate>{me.displayName}</Text>
+                <Text fz="xs" c="dimmed" truncate>
+                  {window.__fixtures.household.name}
+                </Text>
+              </Box>
+            </Group>
+          </AppShell.Section>
+        </AppShell.Navbar>
+
+        <AppShell.Main>
+          <Box maw={1180} mx="auto">
             {screen}
-          </div>
-        </main>
-        {isMobile && <MobileNav tab={tab} onTab={setTab} />}
-      </div>
+          </Box>
+        </AppShell.Main>
+
+        <AppShell.Footer>
+          <Group h="100%" gap={0} grow wrap="nowrap" px="xs">
+            {NAV_TABS.map((t) => (
+              <MobileTabButton
+                key={t.id}
+                active={tab === t.id}
+                label={t.mobileLabel}
+                icon={t.icon}
+                onClick={() => setTab(t.id)}
+              />
+            ))}
+          </Group>
+        </AppShell.Footer>
+      </AppShell>
 
       {logModal && (
         <LogWeightModal
