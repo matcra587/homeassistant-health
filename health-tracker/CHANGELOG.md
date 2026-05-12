@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.2
+
+*   Improved App startup logging for native Home Assistant discovery so the
+    service name, URL, endpoint, and auth mode are shown as separate readable
+    fields.
+
 ## 0.5.1
 
 *   Fixed native Home Assistant discovery so the App registers the runtime

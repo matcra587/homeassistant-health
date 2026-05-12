@@ -173,6 +173,6 @@ export function createServer(options: ServerOptions = {}) {
 
 if (import.meta.main) {
   const server = createServer();
-  console.log(`homeassistant-health listening on ${server.url}`);
+  console.log(`Home Assistant Health listening on ${server.url}`);
   void registerNativeIntegrationDiscovery();
 }

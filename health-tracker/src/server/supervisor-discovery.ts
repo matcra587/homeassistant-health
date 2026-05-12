@@ -6,6 +6,7 @@ const DEFAULT_SUPERVISOR_URL = "http://supervisor";
 const DEFAULT_APP_PORT = 3000;
 
 type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
+type DiscoveryAuthMode = "bearer" | "none";
 
 export type DiscoveryRegistrationResult =
   | "disabled"
@@ -111,6 +112,26 @@ function discoveryPort(
   );
 }
 
+function discoveryAuthMode(token: string): DiscoveryAuthMode {
+  return token ? "bearer" : "none";
+}
+
+function logDiscoveryRegistration(
+  uri: string,
+  endpoint: string,
+  auth: DiscoveryAuthMode,
+): void {
+  for (const line of [
+    "Home Assistant Health discovery registered:",
+    `  service: ${DISCOVERY_SERVICE}`,
+    `  url: ${uri}`,
+    `  endpoint: ${endpoint}`,
+    `  auth: ${auth}`,
+  ]) {
+    console.log(line);
+  }
+}
+
 export async function registerNativeIntegrationDiscovery(
   options: DiscoveryRegistrationOptions = {},
 ): Promise<DiscoveryRegistrationResult> {
@@ -171,8 +192,10 @@ export async function registerNativeIntegrationDiscovery(
       },
     );
 
-    console.log(
-      `Registered Home Assistant Health discovery: service=${DISCOVERY_SERVICE} uri=${uri} endpoint=${endpoint} auth=${nativeOptions.token ? "bearer" : "none"}`,
+    logDiscoveryRegistration(
+      uri,
+      endpoint,
+      discoveryAuthMode(nativeOptions.token),
     );
     return "registered";
   } catch (error) {
