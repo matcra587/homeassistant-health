@@ -82,6 +82,8 @@ updates:
     labels:
       - dependencies
       - docker
+    ignore:
+      - dependency-name: home-assistant/home-assistant
     groups:
       compose-minor-patch:
         applies-to: version-updates
