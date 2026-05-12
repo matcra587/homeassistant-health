@@ -12,6 +12,13 @@ import type {
 
 export type { Entry, Member } from "../lib/types";
 
+export type NativeIntegrationSnapshot = {
+  members: Member[];
+  entries: Entry[];
+  household: Household;
+  today: string;
+};
+
 type CurrentUser = {
   id: string;
   displayName: string;
@@ -918,6 +925,39 @@ function listEntries(database: Database, currentUser: CurrentUser): Entry[] {
   return rows.map(toEntry);
 }
 
+function listNativeIntegrationMembers(database: Database): Member[] {
+  const rows = database
+    .prepare<MemberRow, []>(`
+      SELECT *
+      FROM members
+      WHERE profile_complete = 1
+        AND share_details = 1
+      ORDER BY created_at, id
+    `)
+    .all();
+  return rows.map((row) => toMember(row, ""));
+}
+
+function listEntriesForMembers(
+  database: Database,
+  memberIds: string[],
+): Entry[] {
+  if (memberIds.length === 0) {
+    return [];
+  }
+
+  const placeholders = memberIds.map(() => "?").join(", ");
+  const rows = database
+    .prepare<EntryRow, string[]>(`
+      SELECT *
+      FROM entries
+      WHERE member_id IN (${placeholders})
+      ORDER BY date DESC
+    `)
+    .all(...memberIds);
+  return rows.map(toEntry);
+}
+
 function household(database: Database): Household {
   const row = database
     .prepare<HouseholdRow, [string]>("SELECT * FROM household WHERE id = ?")
@@ -937,6 +977,22 @@ function household(database: Database): Household {
     name: row.name,
     createdAt: row.created_at,
     locale: row.locale,
+  };
+}
+
+export function nativeIntegrationSnapshot(): NativeIntegrationSnapshot {
+  const database = getDb();
+  ensureHousehold(database);
+  const members = listNativeIntegrationMembers(database);
+
+  return {
+    members,
+    entries: listEntriesForMembers(
+      database,
+      members.map((member) => member.id),
+    ),
+    household: household(database),
+    today: todayAtMorning().toISOString(),
   };
 }
 

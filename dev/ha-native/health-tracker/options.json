@@ -1,0 +1,12 @@
+{
+  "native_integration": {
+    "enabled": true,
+    "token": "",
+    "metrics": [
+      "current_weight",
+      "logged_today",
+      "streak_days",
+      "goal_progress"
+    ]
+  }
+}

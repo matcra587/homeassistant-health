@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.0
+
+*   Added a companion Home Assistant custom integration that creates native
+    sensor and binary sensor entities from the App's read-only API.
+*   Added `/api/native/v1/entities`, a read-only payload for completed profiles
+    that have **Share details** enabled.
+*   Added the initial native metrics: current weight, logged today, streak
+    days, and goal progress.
+*   Added App options for enabling the native API, requiring an optional
+    bearer token, and choosing exactly which metrics are exposed.
+*   Added optional `3000/tcp` host-port mapping for direct App/API access. The
+    mapping is disabled by default; ingress and the native integration do not
+    require users to expose it.
+
 ## 0.4.1
 
 *   Swapped the BMI, BMR, TDEE, and ideal-weight calculations over to the

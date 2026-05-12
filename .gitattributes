@@ -3,8 +3,9 @@
 *.png binary -eol
 *.woff2 binary -eol
 
-*.pkl linguist-vendored
-*.sh linguist-vendored
-.mise/tasks/* linguist-vendored
-health-tracker/Dockerfile linguist-vendored
-health-tracker/src/server/index.html linguist-vendored
+# Keep repo tooling and Home Assistant packaging from skewing GitHub language stats.
+hk.pkl -linguist-detectable
+.mise/tasks/* -linguist-detectable
+health-tracker/Dockerfile -linguist-detectable
+health-tracker/run.sh -linguist-detectable
+health-tracker/src/server/index.html -linguist-detectable

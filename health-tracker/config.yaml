@@ -1,6 +1,6 @@
 ---
 name: Home Assistant Health
-version: "0.4.1"
+version: "0.5.0"
 slug: homeassistant_health
 description: Family health tracker for Home Assistant
 url: https://github.com/matcra587/homeassistant-health/tree/main/health-tracker
@@ -18,9 +18,28 @@ panel_title: Health
 homeassistant_api: true
 hassio_api: true
 hassio_role: default
+discovery:
+  - homeassistant_health
+ports:
+  3000/tcp: null
+ports_description:
+  3000/tcp: Health App and API
 watchdog: http://[HOST]:[PORT:3000]/api/health
 map:
   - type: addon_config
     read_only: false
-options: {}
-schema: {}
+options:
+  native_integration:
+    enabled: true
+    token: ""
+    metrics:
+      - current_weight
+      - logged_today
+      - streak_days
+      - goal_progress
+schema:
+  native_integration:
+    enabled: bool
+    token: password?
+    metrics:
+      - list(current_weight|logged_today|streak_days|goal_progress)

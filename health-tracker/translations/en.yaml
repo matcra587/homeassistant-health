@@ -1,3 +1,17 @@
 ---
-configuration: {}
-network: {}
+configuration:
+  native_integration:
+    name: Native integration
+    description: Configure the read-only API used by the Home Assistant Health integration.
+    fields:
+      enabled:
+        name: Enabled
+        description: Allow the Home Assistant Health integration to read shared health entities from the App.
+      token:
+        name: API token
+        description: Optional bearer token required by the native integration API.
+      metrics:
+        name: Exposed metrics
+        description: Select which native Home Assistant entities the App API exposes.
+network:
+  3000/tcp: Health App and API

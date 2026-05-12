@@ -10,6 +10,7 @@ import {
 } from "../lib/schemas";
 import type { Member } from "../lib/types";
 import index from "./index.html";
+import { nativeIntegrationResponse } from "./native-integration";
 import {
   bootstrap,
   csvExport,
@@ -119,6 +120,9 @@ export function createServer(options: ServerOptions = {}) {
       },
       "/api/health": {
         GET: healthResponse,
+      },
+      "/api/native/v1/entities": {
+        GET: route(nativeIntegrationResponse),
       },
       "/api/members": {
         POST: route(async (request) =>

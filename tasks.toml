@@ -7,7 +7,7 @@ run = "mise tasks"
 
 [check]
 description = "Run local verification checks"
-depends = ["typecheck", "test", "build", "lint"]
+depends = ["typecheck", "typecheck:py", "test", "build", "lint"]
 
 [ci]
 description = "Run CI-equivalent checks"
@@ -15,9 +15,13 @@ depends = ["check", "lint:workflow:security"]
 
 [fix]
 description = "Apply automatic formatting and lint fixes"
-depends = ["fmt", "lint:ts:fix", "lint:md:fix"]
+depends = ["fmt", "fix:py", "lint:ts:fix", "lint:md:fix"]
 
 [deps]
+description = "Install project dependencies"
+depends = ["deps:ts", "deps:py"]
+
+["deps:ts"]
 description = "Install app dependencies"
 run = '''
 if [ -f "${APP_DIR}/package.json" ]; then
@@ -26,6 +30,11 @@ else
   echo "skipping deps: ${APP_DIR}/package.json not found"
 fi
 '''
+
+["deps:py"]
+description = "Sync Home Assistant integration Python dependencies"
+env = { UV_LINK_MODE = "copy" }
+run = "uv sync --directory \"${CUSTOM_COMPONENTS_DIR}\" --frozen"
 
 [dev]
 description = "Start the app dev server"
@@ -39,6 +48,14 @@ else
   exit 1
 fi
 '''
+
+["dev:ha-native"]
+description = "Start a local Home Assistant stack for the native integration"
+run = "docker compose -f dev/ha-native/compose.yaml up --build"
+
+["dev:ha-native:down"]
+description = "Stop the local Home Assistant native integration stack"
+run = "docker compose -f dev/ha-native/compose.yaml down -v"
 
 [build]
 description = "Build production assets/server"
@@ -75,6 +92,11 @@ else
 fi
 '''
 
+["typecheck:py"]
+description = "Run ty checks for the Home Assistant integration"
+env = { UV_LINK_MODE = "copy" }
+run = "uv run --directory \"${CUSTOM_COMPONENTS_DIR}\" --frozen ty check homeassistant_health"
+
 [test]
 description = "Run all tests"
 alias = "t"
@@ -82,7 +104,6 @@ depends = ["test:ts"]
 
 ["test:ts"]
 description = "Run Bun tests"
-alias = "t"
 raw_args = true
 run = '''
 if [ -f "${APP_DIR}/package.json" ]; then
@@ -94,7 +115,7 @@ fi
 
 [lint]
 description = "Run all lint checks"
-depends = ["lint:ts", "lint:md", "lint:docker", "lint:shell", "lint:workflow"]
+depends = ["lint:ts", "lint:py", "lint:md", "lint:docker", "lint:shell", "lint:workflow"]
 
 ["lint:ts"]
 description = "Run Biome checks"
@@ -118,6 +139,24 @@ else
 fi
 '''
 
+["lint:py"]
+description = "Run Ruff checks for the Home Assistant integration"
+env = { UV_LINK_MODE = "copy" }
+run = "uv run --directory \"${CUSTOM_COMPONENTS_DIR}\" --frozen ruff check homeassistant_health"
+
+["lint:py:fix"]
+description = "Run Ruff with automatic fixes for the Home Assistant integration"
+env = { UV_LINK_MODE = "copy" }
+run = "uv run --directory \"${CUSTOM_COMPONENTS_DIR}\" --frozen ruff check --fix homeassistant_health"
+
+["fix:py"]
+description = "Apply Python lint fixes and formatting"
+env = { UV_LINK_MODE = "copy" }
+run = [
+  "uv run --directory \"${CUSTOM_COMPONENTS_DIR}\" --frozen ruff check --fix homeassistant_health",
+  "uv run --directory \"${CUSTOM_COMPONENTS_DIR}\" --frozen ruff format homeassistant_health",
+]
+
 [fmt]
 description = "Format app files"
 raw_args = true
@@ -128,6 +167,11 @@ else
   echo "skipping fmt: ${APP_DIR}/package.json not found"
 fi
 '''
+
+["fmt:py"]
+description = "Format the Home Assistant integration"
+env = { UV_LINK_MODE = "copy" }
+run = "uv run --directory \"${CUSTOM_COMPONENTS_DIR}\" --frozen ruff format homeassistant_health"
 
 ["lint:md"]
 description = "Lint Markdown files with rumdl"

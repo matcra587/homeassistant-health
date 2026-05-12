@@ -251,3 +251,56 @@ test("allows Home Assistant users to manage their own household members", () => 
     payload.entries.some((item) => item.memberId === "m_owned_child"),
   ).toBe(true);
 });
+
+test("native integration snapshot only includes shared complete profiles", () => {
+  const sharedHeaders = haHeaders("ha-native-shared", "Native Shared");
+  const privateHeaders = haHeaders("ha-native-private", "Native Private");
+  const incompleteHeaders = haHeaders(
+    "ha-native-incomplete",
+    "Native Incomplete",
+  );
+
+  store.bootstrap(sharedHeaders, requireIngress);
+  completeProfile(sharedHeaders, "ha-native-shared");
+  store.updateMember(
+    sharedHeaders,
+    "ha-native-shared",
+    { shareDetails: true },
+    requireIngress,
+  );
+  store.saveEntry(
+    sharedHeaders,
+    entry({
+      id: "ha-native-shared-2026-05-10",
+      memberId: "ha-native-shared",
+      date: "2026-05-10T07:30:00.000Z",
+    }),
+    requireIngress,
+  );
+
+  store.bootstrap(privateHeaders, requireIngress);
+  completeProfile(privateHeaders, "ha-native-private");
+  store.updateMember(
+    privateHeaders,
+    "ha-native-private",
+    { shareDetails: false },
+    requireIngress,
+  );
+
+  store.bootstrap(incompleteHeaders, requireIngress);
+  store.updateMember(
+    incompleteHeaders,
+    "ha-native-incomplete",
+    { shareDetails: true },
+    requireIngress,
+  );
+
+  const snapshot = store.nativeIntegrationSnapshot();
+  const ids = snapshot.members.map((item) => item.id);
+  expect(ids).toContain("ha-native-shared");
+  expect(ids).not.toContain("ha-native-private");
+  expect(ids).not.toContain("ha-native-incomplete");
+  expect(
+    snapshot.entries.some((item) => item.memberId === "ha-native-shared"),
+  ).toBe(true);
+});

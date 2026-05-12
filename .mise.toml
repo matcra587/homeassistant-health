@@ -10,14 +10,17 @@ bun = "latest"
 hadolint = "latest"
 hk = "latest"
 pkl = "latest"
+python = "3.14.2"
 rumdl = "latest"
 shellcheck = "latest"
+uv = "latest"
 zizmor = "latest"
 
 [env]
 HK_MISE = 1
 DO_NOT_TRACK = 1
 APP_DIR = "health-tracker"
+CUSTOM_COMPONENTS_DIR = "custom_components"
 DOCKER_BUILD_ARCH = "amd64"
 DOCKER_BUILD_VERSION = "0.1.0"
 DOCKER_IMAGE = "homeassistant-health:test"

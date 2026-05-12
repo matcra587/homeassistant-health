@@ -17,13 +17,13 @@ import { ProgressBar } from "../components/ProgressBar";
 import { WeightChart } from "../components/WeightChart";
 import {
   bmiCategory,
+  bodyFatCategory,
   calcBMI,
   calcBMR,
   calcIdealWeight,
   calcPacing,
   calcStreak,
   calcTDEE,
-  bodyFatCategory,
   estBodyFat,
   progressFraction,
   trendDirection,

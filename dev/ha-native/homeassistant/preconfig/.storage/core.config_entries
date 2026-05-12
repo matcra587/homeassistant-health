@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "core.config_entries",
+  "data": {
+    "entries": [
+      {
+        "entry_id": "homeassistant_health_dev",
+        "version": 1,
+        "minor_version": 1,
+        "domain": "homeassistant_health",
+        "title": "Home Assistant Health",
+        "data": {
+          "url": "http://health-tracker:3000",
+          "token": ""
+        },
+        "options": {},
+        "pref_disable_new_entities": false,
+        "pref_disable_polling": false,
+        "source": "user",
+        "unique_id": "homeassistant_health_h1",
+        "disabled_by": null
+      }
+    ]
+  }
+}

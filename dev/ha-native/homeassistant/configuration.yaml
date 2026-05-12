@@ -1,0 +1,17 @@
+---
+default_config:
+
+homeassistant:
+  name: Home Assistant Health Dev
+  latitude: 0
+  longitude: 0
+  elevation: 0
+  unit_system: metric
+  country: US
+  currency: USD
+  time_zone: UTC
+
+logger:
+  default: warning
+  logs:
+    custom_components.homeassistant_health: debug
