@@ -11,6 +11,7 @@ import {
 import type { Member } from "../lib/types";
 import index from "./index.html";
 import { nativeIntegrationResponse } from "./native-integration";
+import { registerNativeIntegrationDiscovery } from "./supervisor-discovery";
 import {
   bootstrap,
   csvExport,
@@ -173,4 +174,5 @@ export function createServer(options: ServerOptions = {}) {
 if (import.meta.main) {
   const server = createServer();
   console.log(`homeassistant-health listening on ${server.url}`);
+  void registerNativeIntegrationDiscovery();
 }

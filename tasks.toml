@@ -78,7 +78,7 @@ sources = [
 ]
 
 [bump]
-description = "Bump app versions in package.json and config.yaml"
+description = "Bump app and integration versions"
 raw_args = true
 file = ".mise/tasks/bump"
 

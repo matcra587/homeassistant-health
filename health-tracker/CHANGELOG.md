@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.1
+
+*   Fixed native Home Assistant discovery so the App registers the runtime
+    Supervisor hostname instead of relying on a hard-coded App DNS name.
+*   Added App startup logs showing the native integration service, URL,
+    endpoint, and whether bearer-token auth is enabled, without printing the
+    token value.
+
 ## 0.5.0
 
 *   Added a companion Home Assistant custom integration that creates native
