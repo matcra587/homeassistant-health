@@ -36,6 +36,7 @@ secrets/
 # Home Assistant local development
 ha-config/
 test-logs/
+!custom_components/**/manifest.json
 
 # Tool caches
 .task/

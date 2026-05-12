@@ -1,0 +1,12 @@
+{
+  "domain": "homeassistant_health",
+  "name": "Home Assistant Health",
+  "codeowners": ["@matcra587"],
+  "config_flow": true,
+  "documentation": "https://github.com/matcra587/homeassistant-health",
+  "integration_type": "hub",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/matcra587/homeassistant-health/issues",
+  "requirements": [],
+  "version": "0.5.0"
+}
