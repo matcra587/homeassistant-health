@@ -21,4 +21,15 @@ Profiles appear as Home Assistant entities after the profile is complete,
 **Share details** is enabled, and the integration's next one-minute poll sees
 the App API update.
 
+Install the companion custom integration with HACS as an **Integration**
+repository:
+
+```text
+https://github.com/matcra587/homeassistant-health
+```
+
+HACS installs only the custom integration. Install this App from the Home
+Assistant App repository first, then restart Home Assistant and add **Home
+Assistant Health** from Settings > Devices & Services.
+
 See [`DOCS.md`](DOCS.md) for routes, storage, and local development.

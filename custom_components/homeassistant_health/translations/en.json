@@ -3,9 +3,9 @@
     "step": {
       "user": {
         "title": "Home Assistant Health",
-        "description": "Connect to the Home Assistant Health add-on API.",
+        "description": "Connect to the Home Assistant Health App API.",
         "data": {
-          "url": "Add-on API URL",
+          "url": "App API URL",
           "token": "API token"
         }
       },
@@ -15,14 +15,14 @@
       }
     },
     "error": {
-      "cannot_connect": "Cannot connect to the add-on API.",
+      "cannot_connect": "Cannot connect to the App API.",
       "invalid_auth": "The API token was rejected.",
       "invalid_url": "Enter a valid HTTP or HTTPS URL."
     },
     "abort": {
       "already_configured": "Home Assistant Health is already configured.",
-      "cannot_connect": "Cannot connect to the add-on API.",
-      "invalid_url": "The discovered add-on URL is not valid.",
+      "cannot_connect": "Cannot connect to the App API.",
+      "invalid_url": "The discovered App URL is not valid.",
       "invalid_auth": "The discovered API token was rejected."
     }
   }

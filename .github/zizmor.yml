@@ -4,3 +4,4 @@ rules:
       # Home Assistant publishes this helper from an untagged commit.
       # Keep the full SHA pin; repository settings allowlist the action source.
       - build-app.yaml:40
+      - hacs.yml:60

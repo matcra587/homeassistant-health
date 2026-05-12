@@ -41,10 +41,22 @@ Invalid payloads return HTTP 422 with a field name in the error message.
 
 The repository includes a custom integration at
 [`../custom_components/homeassistant_health`](../custom_components/homeassistant_health).
-Install that integration in Home Assistant, then add **Home Assistant Health**
-from Settings > Devices & Services. The integration creates real Home Assistant
-`SensorEntity` and `BinarySensorEntity` entities from the App API; it does
-not use MQTT discovery or write states directly through the REST API.
+Install that integration with HACS, then add **Home Assistant Health** from
+Settings > Devices & Services. HACS installs only the custom integration; it
+does not install the App. The integration creates real Home Assistant
+`SensorEntity` and `BinarySensorEntity` entities from the App API; it does not
+use MQTT discovery or write states directly through the REST API.
+
+To add this repository to HACS manually:
+
+```text
+Repository: https://github.com/matcra587/homeassistant-health
+Category: Integration
+```
+
+For advanced manual installs, copy
+`custom_components/homeassistant_health` into Home Assistant as
+`/config/custom_components/homeassistant_health`, then restart Home Assistant.
 
 On Home Assistant OS installs, the App advertises Supervisor discovery for the
 `homeassistant_health` integration. Discovery can prefill the App connection if

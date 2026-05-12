@@ -1,0 +1,60 @@
+---
+name: hacs
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/hacs.yml"
+      - "custom_components/homeassistant_health/**"
+      - "hacs.json"
+      - "README.md"
+      - "health-tracker/DOCS.md"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/hacs.yml"
+      - "custom_components/homeassistant_health/**"
+      - "hacs.json"
+      - "README.md"
+      - "health-tracker/DOCS.md"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  hacs:
+    name: HACS
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: HACS validation
+        uses: hacs/action@d556e736723344f83838d08488c983a15381059a # 22.5.0
+        with:
+          category: integration
+          comment: "false"
+
+  hassfest:
+    name: Hassfest
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Hassfest validation
+        uses: home-assistant/actions/hassfest@f6f29a7ee3fa0eccadf3620a7b9ee00ab54ec03b

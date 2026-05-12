@@ -10,6 +10,25 @@ integration:
     that creates sensor and binary sensor entities from the App's read-only
     API. See [`custom_components/homeassistant_health/`](custom_components/homeassistant_health/).
 
+## Installation
+
+Install the App from this Home Assistant repository, then install the companion
+custom integration with HACS.
+
+HACS installs only the custom integration. It does not install the App itself.
+
+[![Open your Home Assistant instance and open this repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=matcra587&repository=homeassistant-health&category=integration)
+
+If the button is not available, add this repository to HACS manually:
+
+```text
+Repository: https://github.com/matcra587/homeassistant-health
+Category: Integration
+```
+
+After HACS installs the integration, restart Home Assistant and add **Home
+Assistant Health** from Settings > Devices & Services.
+
 ## What the App Does
 
 *   Runs as a Home Assistant ingress app on port `3000`.
@@ -39,6 +58,7 @@ integration:
 ```text
 repository.yaml           Home Assistant App repository metadata
 custom_components/        Home Assistant custom integration
+hacs.json                 HACS metadata for the custom integration
 health-tracker/           the Home Assistant App/add-on
   config.yaml             App metadata
   Dockerfile              App image build
